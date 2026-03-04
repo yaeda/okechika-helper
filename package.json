@@ -1,0 +1,30 @@
+{
+  "name": "okechika-helper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "@types/chrome": "^0.0.280",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "@wxt-dev/module-react": "^1.1.0",
+    "eslint": "^9.14.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.13.0",
+    "wxt": "^0.20.6"
+  }
+}

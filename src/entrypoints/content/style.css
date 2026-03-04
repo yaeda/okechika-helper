@@ -1,0 +1,84 @@
+ruby.okechika-ruby rt {
+  color: #6b7280;
+  font-size: 0.65em;
+  letter-spacing: 0;
+  user-select: none;
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+}
+
+#okechika-tooltip {
+  position: fixed;
+  z-index: 2147483647;
+  background: #111827;
+  color: #f9fafb;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 12px;
+  width: 300px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+  display: none;
+}
+
+#okechika-tooltip * {
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+}
+
+#okechika-tooltip form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: start;
+}
+
+#okechika-tooltip .okechika-input-col {
+  display: grid;
+  gap: 4px;
+}
+
+#okechika-tooltip input {
+  flex: 1;
+  border-radius: 6px;
+  border: 1px solid #6b7280;
+  background: #111827;
+  color: #f9fafb;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+#okechika-tooltip .okechika-error {
+  min-height: 1em;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #ef4444;
+}
+
+#okechika-tooltip button {
+  border: 0;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#okechika-tooltip .okechika-caption {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #d1d5db;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+
+#okechika-tooltip .okechika-selected-unknown {
+  font-family: Underground, UnknownGlyphs, 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+  font-size: 15px;
+}
+
+#okechika-tooltip .okechika-selected-normal {
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+  font-size: 15px;
+}
