@@ -225,6 +225,10 @@ button:hover {
   border-radius: 10px;
 }
 
+.table-wrap-second {
+  margin-top: 10px;
+}
+
 table {
   width: max-content;
   border-collapse: collapse;
