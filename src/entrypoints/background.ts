@@ -53,6 +53,10 @@ function queueSyncRuntimeContentScript(): void {
 }
 
 export default defineBackground(() => {
+  chrome.action.onClicked.addListener(() => {
+    void chrome.runtime.openOptionsPage();
+  });
+
   chrome.runtime.onInstalled.addListener(() => {
     void ensureDefaults();
     queueSyncRuntimeContentScript();

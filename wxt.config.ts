@@ -6,6 +6,9 @@ export default defineConfig({
   manifest: {
     name: 'Okechika Helper',
     description: 'Helper extension for decoding OKECHIKA glyphs.',
+    action: {
+      default_title: '桶地下 Helper 設定を開く'
+    },
     permissions: ['storage', 'scripting'],
     host_permissions: [
       'https://www.pub-riddle.com/*',
