@@ -18,6 +18,7 @@ ruby.okechika-ruby rt {
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
   font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
   display: none;
+  text-align: center;
 }
 
 #okechika-tooltip * {
@@ -26,14 +27,14 @@ ruby.okechika-ruby rt {
 
 #okechika-tooltip .okechika-form {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px;
-  align-items: start;
+  gap: 4px;
 }
 
-#okechika-tooltip .okechika-input-col {
+#okechika-tooltip .okechika-input-row {
   display: grid;
-  gap: 4px;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
 }
 
 #okechika-tooltip input {
@@ -47,10 +48,18 @@ ruby.okechika-ruby rt {
 }
 
 #okechika-tooltip .okechika-error {
-  min-height: 1em;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
   font-size: 11px;
   line-height: 1.2;
   color: #ef4444;
+  transition: max-height 140ms ease, opacity 140ms ease;
+}
+
+#okechika-tooltip .okechika-error.is-visible {
+  max-height: 2.4em;
+  opacity: 1;
 }
 
 #okechika-tooltip button {
@@ -61,6 +70,26 @@ ruby.okechika-ruby rt {
   padding: 8px 12px;
   cursor: pointer;
   font-size: 13px;
+}
+
+#okechika-tooltip .okechika-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+  justify-content: center;
+}
+
+#okechika-tooltip .okechika-copy {
+  background: #374151;
+}
+
+#okechika-tooltip .okechika-copy-jp {
+  background: #374151;
+}
+
+#okechika-tooltip .okechika-search {
+  background: #374151;
 }
 
 #okechika-tooltip .okechika-caption {

@@ -4,7 +4,7 @@ import {
   createAnnotationController,
   type AnnotationController
 } from '@/entrypoints/content/annotation';
-import { getSelectionForUnknownGlyph } from '@/entrypoints/content/glyph';
+import { getSelectionForUnknownGlyph, isTranslatableGlyphChar } from '@/entrypoints/content/glyph';
 import { getHostForMatching } from '@/entrypoints/content/host';
 import { createTooltipUi, type TooltipUi } from '@/entrypoints/content/tooltip-ui';
 import './style.css';
@@ -12,6 +12,18 @@ import './style.css';
 let currentMappings: DecodeMap = {};
 let isActive = false;
 let observer: MutationObserver | null = null;
+
+function decodeSelectedText(text: string): string {
+  return Array.from(text)
+    .map((char) => {
+      if (!isTranslatableGlyphChar(char)) {
+        return char;
+      }
+
+      return currentMappings[char] ?? '?';
+    })
+    .join('');
+}
 
 async function refreshActivation(
   tooltip: Pick<TooltipUi, 'hide'>,
@@ -67,16 +79,20 @@ export default defineContentScript({
   main(ctx) {
     const annotation = createAnnotationController();
 
-    const tooltip = createTooltipUi(ctx, async (entries) => {
-      await upsertMappings(entries);
-      currentMappings = {
-        ...currentMappings,
-        ...entries
-      };
-      annotation.setMappings(currentMappings);
-      annotation.updateExistingRubies();
-      window.getSelection()?.removeAllRanges();
-    });
+    const tooltip = createTooltipUi(
+      ctx,
+      async (entries) => {
+        await upsertMappings(entries);
+        currentMappings = {
+          ...currentMappings,
+          ...entries
+        };
+        annotation.setMappings(currentMappings);
+        annotation.updateExistingRubies();
+        window.getSelection()?.removeAllRanges();
+      },
+      decodeSelectedText
+    );
 
     void refreshActivation(tooltip, annotation);
 

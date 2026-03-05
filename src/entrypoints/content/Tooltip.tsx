@@ -12,6 +12,9 @@ export interface TooltipState {
 interface TooltipProps {
   state: TooltipState;
   onSubmit: () => void;
+  onCopySelected: () => void;
+  onCopyDecoded: () => void;
+  onSearch: () => void;
   onInputChange: (value: string) => void;
   onCompositionStart: () => void;
   onCompositionEnd: () => void;
@@ -38,14 +41,25 @@ export function Tooltip(props: TooltipProps) {
       }}
     >
       <div className="okechika-caption">
-        Selected:{' '}
         <span className="okechika-selected-unknown">{state.selectedText}</span>
         （<span className="okechika-selected-normal">{state.selectedText}</span>
         ）
       </div>
 
+      <div className="okechika-actions">
+        <button type="button" className="okechika-search" onClick={props.onSearch}>
+          検索
+        </button>
+        <button type="button" className="okechika-copy" onClick={props.onCopySelected}>
+          コピー
+        </button>
+        <button type="button" className="okechika-copy-jp" onClick={props.onCopyDecoded}>
+          🇯🇵コピー
+        </button>
+      </div>
+
       <form className="okechika-form" onSubmit={handleSubmit}>
-        <div className="okechika-input-col">
+        <div className="okechika-input-row">
           <input
             ref={props.onInputRef}
             value={state.inputValue}
@@ -58,9 +72,9 @@ export function Tooltip(props: TooltipProps) {
             onFocus={props.onInputFocus}
             onBlur={props.onInputBlur}
           />
-          <div className="okechika-error">{state.error}</div>
+          <button type="submit">Save</button>
         </div>
-        <button type="submit">Save</button>
+        <div className={`okechika-error${state.error ? ' is-visible' : ''}`}>{state.error}</div>
       </form>
     </div>
   );

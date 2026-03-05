@@ -33,9 +33,58 @@ function createInitialTooltipState(): TooltipState {
   };
 }
 
+function resolveSearchBaseUrl(): URL | null {
+  const current = new URL(window.location.href);
+  if (current.protocol === 'http:' || current.protocol === 'https:') {
+    return new URL('/', current.origin);
+  }
+
+  if (document.referrer) {
+    try {
+      const referrer = new URL(document.referrer);
+      return new URL('/', referrer.origin);
+    } catch {
+      // Ignore malformed referrer.
+    }
+  }
+
+  try {
+    const topUrl = new URL(window.top?.location.href ?? '');
+    if (topUrl.protocol === 'http:' || topUrl.protocol === 'https:') {
+      return new URL('/', topUrl.origin);
+    }
+  } catch {
+    // Ignore cross-origin access errors.
+  }
+
+  return null;
+}
+
+function navigateToSearchPage(query: string): void {
+  const baseUrl = resolveSearchBaseUrl();
+  if (!baseUrl) {
+    return;
+  }
+
+  baseUrl.searchParams.set('s', query);
+  const destination = baseUrl.toString();
+
+  try {
+    if (window.top && window.top !== window) {
+      window.top.location.href = destination;
+      return;
+    }
+  } catch {
+    // Ignore cross-origin access errors and fallback to current frame.
+  }
+
+  window.location.href = destination;
+}
+
 export function createTooltipUi(
   ctx: ContentScriptContext,
-  onSubmitMappings: (entries: DecodeMap) => Promise<void>
+  onSubmitMappings: (entries: DecodeMap) => Promise<void>,
+  decodeSelectionText: (text: string) => string
 ): TooltipUi {
   const ui = createIntegratedUi<TooltipMounted>(ctx, {
     position: 'overlay',
@@ -74,6 +123,63 @@ export function createTooltipUi(
             },
             onInputBlur: () => {
               isInputFocused = false;
+            },
+            onCopySelected: () => {
+              void (async () => {
+                try {
+                  await navigator.clipboard.writeText(state.selectedText);
+                  state = {
+                    ...state,
+                    visible: false,
+                    selectedText: '',
+                    inputValue: '',
+                    error: ''
+                  };
+                } catch {
+                  state = {
+                    ...state,
+                    error: 'コピーに失敗しました。'
+                  };
+                }
+                render();
+              })();
+            },
+            onCopyDecoded: () => {
+              void (async () => {
+                try {
+                  const decoded = decodeSelectionText(state.selectedText);
+                  await navigator.clipboard.writeText(decoded);
+                  state = {
+                    ...state,
+                    visible: false,
+                    selectedText: '',
+                    inputValue: '',
+                    error: ''
+                  };
+                } catch {
+                  state = {
+                    ...state,
+                    error: 'コピーに失敗しました。'
+                  };
+                }
+                render();
+              })();
+            },
+            onSearch: () => {
+              const query = state.selectedText;
+              if (!query) {
+                return;
+              }
+
+              navigateToSearchPage(query);
+              state = {
+                ...state,
+                visible: false,
+                selectedText: '',
+                inputValue: '',
+                error: ''
+              };
+              render();
             },
             onSubmit: () => {
               void (async () => {
