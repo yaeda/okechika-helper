@@ -24,7 +24,8 @@ body {
 }
 
 .page {
-  max-width: 880px;
+  width: 100%;
+  max-width: min(1600px, calc(100vw - 24px));
   margin: 0 auto;
   padding: 28px 20px 40px;
   display: grid;
@@ -67,6 +68,17 @@ body {
   margin: 8px 0;
 }
 
+.caption.progress {
+  display: inline-block;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: #4a3d32;
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .domain-list {
   margin: 8px 0 0;
   padding-left: 0;
@@ -85,7 +97,37 @@ body {
 .button-group {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.display-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.display-mode-group {
+  display: inline-flex;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f3ede7;
+}
+
+.display-mode-group .secondary {
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid var(--line);
+}
+
+.display-mode-group .secondary:last-child {
+  border-right: 0;
 }
 
 button {
@@ -110,6 +152,11 @@ button:hover {
 
 .secondary:hover {
   background: #e5dbd1;
+}
+
+.secondary.is-active {
+  background: #d9ccbf;
+  border-color: #c9b8a7;
 }
 
 .danger {
@@ -171,23 +218,51 @@ button:hover {
 }
 
 .table-wrap {
+  max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
 }
 
 table {
-  width: 100%;
+  width: max-content;
   border-collapse: collapse;
   background: #fff;
 }
 
+.table-wrap-compact {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.compact-table {
+  width: auto;
+}
+
 th,
 td {
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid var(--line);
-  padding: 8px;
+  padding: 6px;
 }
 
 thead th {
   background: var(--accent-soft);
   font-size: 13px;
+}
+
+.glyph-cell {
+  min-width: 56px;
+  white-space: nowrap;
+  font-size: 16px;
+}
+
+.unknown-target {
+  opacity: 0.55;
+}
+
+.subsection-title {
+  margin: 14px 0 6px;
+  font-size: 15px;
 }

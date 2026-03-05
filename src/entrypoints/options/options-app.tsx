@@ -9,6 +9,7 @@ import {
   setSettings,
   toCsv
 } from '@/lib/storage';
+import { OKECHIKA_CHARS } from '@/lib/okechika-chars';
 import type { DecodeMap, DecodeTable, ExtensionSettings } from '@/lib/types';
 
 function downloadCsv(mappings: DecodeMap): void {
@@ -133,7 +134,21 @@ function toDomainInput(rawValue: string): string | null {
   }
 }
 
+function formatUpdatedAt(value: string | null): string {
+  if (!value) {
+    return '未更新';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString();
+}
+
 export function OptionsApp() {
+  const [displayMode, setDisplayMode] = useState<'source' | 'target' | 'both'>('both');
   const [settings, setLocalSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
   const [loading, setLoading] = useState(true);
@@ -171,13 +186,43 @@ export function OptionsApp() {
     };
   }, []);
 
-  const rows = useMemo(
-    () =>
-      Object.entries(table?.mappings ?? {}).sort(([a], [b]) =>
-        a.localeCompare(b, undefined, { sensitivity: 'base' })
-      ),
-    [table]
-  );
+  const glyphRows = useMemo(() => {
+    const mappings = table?.mappings ?? {};
+    const cells = OKECHIKA_CHARS.map((source) => ({
+      source,
+      target: mappings[source] ?? '?'
+    }));
+
+    const chunked: Array<Array<{ source: string; target: string }>> = [];
+    for (let i = 0; i < cells.length; i += 20) {
+      chunked.push(cells.slice(i, i + 20));
+    }
+    return chunked;
+  }, [table]);
+
+  const decodeProgress = useMemo(() => {
+    const mappings = table?.mappings ?? {};
+    const total = OKECHIKA_CHARS.length;
+    const decoded = OKECHIKA_CHARS.reduce((count, source) => {
+      const target = mappings[source];
+      return target && target !== '?' ? count + 1 : count;
+    }, 0);
+    const percent = total === 0 ? 0 : (decoded / total) * 100;
+
+    return {
+      decoded,
+      total,
+      percent
+    };
+  }, [table]);
+
+  const otherMappings = useMemo(() => {
+    const mappings = table?.mappings ?? {};
+    const defined = new Set(OKECHIKA_CHARS);
+    return Object.entries(mappings)
+      .filter(([source]) => !defined.has(source))
+      .sort(([a], [b]) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [table]);
 
   async function saveDomains(domains: string[]): Promise<void> {
     if (!settings) {
@@ -360,35 +405,93 @@ export function OptionsApp() {
             </button>
           </div>
         </div>
-        <p className="caption">Columns: source,target</p>
-        <p className="caption">Updated At: {table.updatedAt ?? 'Never'}</p>
+        <p className="caption">最終更新日: {formatUpdatedAt(table.updatedAt)}</p>
         <p className="caption success">{importMessage}</p>
         <p className="caption error">{importError}</p>
 
+        <div className="display-row">
+          <p className="caption progress">
+            解析進捗: {decodeProgress.decoded}/{decodeProgress.total}（
+            {decodeProgress.percent.toFixed(1)}%）
+          </p>
+          <div className="display-mode-group">
+            <button
+              type="button"
+              className={displayMode === 'source' ? 'secondary is-active' : 'secondary'}
+              onClick={() => setDisplayMode('source')}
+            >
+              変換前
+            </button>
+            <button
+              type="button"
+              className={displayMode === 'target' ? 'secondary is-active' : 'secondary'}
+              onClick={() => setDisplayMode('target')}
+            >
+              変換後
+            </button>
+            <button
+              type="button"
+              className={displayMode === 'both' ? 'secondary is-active' : 'secondary'}
+              onClick={() => setDisplayMode('both')}
+            >
+              両方表示
+            </button>
+          </div>
+        </div>
+
         <div className="table-wrap">
           <table>
-            <thead>
-              <tr>
-                <th>source</th>
-                <th>target</th>
-              </tr>
-            </thead>
             <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={2}>No mappings yet.</td>
+              {glyphRows.map((row, rowIndex) => (
+                <tr key={`glyph-row-${rowIndex}`}>
+                  {row.map(({ source, target }) => (
+                    <td key={source} className="glyph-cell">
+                      {displayMode === 'source' ? (
+                        <span className={target === '?' ? 'unknown-target' : undefined}>{source}</span>
+                      ) : null}
+                      {displayMode === 'target' ? (
+                        <span className={target === '?' ? 'unknown-target' : undefined}>{target}</span>
+                      ) : null}
+                      {displayMode === 'both' ? (
+                        <>
+                          <span className={target === '?' ? 'unknown-target' : undefined}>
+                            {source}
+                          </span>
+                          <span> | </span>
+                          <span className={target === '?' ? 'unknown-target' : undefined}>{target}</span>
+                        </>
+                      ) : null}
+                    </td>
+                  ))}
                 </tr>
-              ) : (
-                rows.map(([source, target]) => (
-                  <tr key={source}>
-                    <td>{source}</td>
-                    <td>{target}</td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
+
+        <h3 className="subsection-title">その他の文字</h3>
+        {otherMappings.length === 0 ? (
+          <p className="caption">該当する文字はありません。</p>
+        ) : (
+          <div className="table-wrap table-wrap-compact">
+            <table className="compact-table">
+              <thead>
+                <tr>
+                  <th>変換前</th>
+                  <th>変換後</th>
+                </tr>
+              </thead>
+              <tbody>
+                {otherMappings.map(([source, target]) => (
+                  <tr key={`other-${source}`}>
+                    <td className={target === '?' ? 'unknown-target' : undefined}>{source}</td>
+                    <td className={target === '?' ? 'unknown-target' : undefined}>{target}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </main>
   );

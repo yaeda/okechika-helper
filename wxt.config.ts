@@ -7,7 +7,8 @@ export default defineConfig({
     name: 'Okechika Helper',
     description: 'Helper extension for decoding OKECHIKA glyphs.',
     permissions: ['storage'],
-    host_permissions: ['<all_urls>']
+    host_permissions: ['<all_urls>'],
+    options_page: 'options.html'
   },
   webExt: {
     startUrls: [
