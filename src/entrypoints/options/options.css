@@ -61,14 +61,6 @@ body {
   margin-top: 0;
 }
 
-.toggle-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  font-weight: 600;
-}
-
 .caption {
   color: var(--muted);
   font-size: 13px;
@@ -77,7 +69,10 @@ body {
 
 .domain-list {
   margin: 8px 0 0;
-  padding-left: 18px;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
 }
 
 .panel-header {
@@ -99,6 +94,65 @@ button {
 
 button:hover {
   background: #a54018;
+}
+
+.secondary {
+  background: #f3ede7;
+  color: #4a3d32;
+  border-color: var(--line);
+}
+
+.secondary:hover {
+  background: #e5dbd1;
+}
+
+.danger {
+  background: #fff;
+  color: #a92f2f;
+  border-color: #e5bcbc;
+}
+
+.danger:hover {
+  background: #fef0f0;
+}
+
+.domain-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.domain-input-row input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+}
+
+.domain-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.empty {
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.error {
+  color: #b42318;
+  min-height: 1.2em;
 }
 
 .table-wrap {

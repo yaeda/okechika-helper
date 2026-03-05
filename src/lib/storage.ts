@@ -5,10 +5,9 @@ const STORAGE_KEYS = {
   settings: 'settings'
 } as const;
 
-const DEFAULT_DOMAINS = ['www.pub-riddle.com', 'www.qtes9gu0k.xyz'];
+export const DEFAULT_DOMAINS = ['www.pub-riddle.com', 'www.qtes9gu0k.xyz'];
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
-  enableAllSites: false,
   enabledDomains: DEFAULT_DOMAINS
 };
 
@@ -29,8 +28,9 @@ export async function getState(): Promise<ExtensionState> {
   const result = await getSyncStorage().get([STORAGE_KEYS.table, STORAGE_KEYS.settings]);
 
   const table = (result[STORAGE_KEYS.table] as DecodeTable | undefined) ?? DEFAULT_TABLE;
-  const settings =
-    (result[STORAGE_KEYS.settings] as ExtensionSettings | undefined) ?? DEFAULT_SETTINGS;
+  const rawSettings = result[STORAGE_KEYS.settings] as
+    | (Partial<ExtensionSettings> & { enableAllSites?: boolean })
+    | undefined;
 
   return {
     table: {
@@ -38,15 +38,16 @@ export async function getState(): Promise<ExtensionState> {
       updatedAt: table.updatedAt ?? null
     },
     settings: {
-      enableAllSites: settings.enableAllSites ?? false,
-      enabledDomains: settings.enabledDomains ?? DEFAULT_DOMAINS
+      enabledDomains: (rawSettings?.enabledDomains ?? DEFAULT_DOMAINS).map(normalizeHost)
     }
   };
 }
 
 export async function setSettings(settings: ExtensionSettings): Promise<void> {
   await getSyncStorage().set({
-    [STORAGE_KEYS.settings]: settings
+    [STORAGE_KEYS.settings]: {
+      enabledDomains: settings.enabledDomains.map(normalizeHost)
+    } satisfies ExtensionSettings
   });
 }
 
@@ -70,15 +71,11 @@ export async function upsertMappings(entries: DecodeMap): Promise<void> {
 }
 
 export function shouldRunOnHost(settings: ExtensionSettings, host: string): boolean {
-  if (settings.enableAllSites) {
-    return true;
-  }
-
   const normalizedHost = normalizeHost(host);
   return settings.enabledDomains.some((domain) => isSameHostOrWwwPair(normalizedHost, domain));
 }
 
-function normalizeHost(host: string): string {
+export function normalizeHost(host: string): string {
   return host.trim().toLowerCase().replace(/\.$/, '');
 }
 

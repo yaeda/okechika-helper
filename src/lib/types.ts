@@ -6,7 +6,6 @@ export interface DecodeTable {
 }
 
 export interface ExtensionSettings {
-  enableAllSites: boolean;
   enabledDomains: string[];
 }
 
