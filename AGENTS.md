@@ -26,6 +26,7 @@ This document is a guide for agents and contributors working in this repository.
 ## 4. Tooling / Quality Gates
 
 - ESLint is the standard linter
+- ESLint excludes generated directories (`.output/`, `.wxt/`) from lint targets
 - Prettier is the standard formatter
 - Formatting output is authoritative
 - Tailwind class ordering should be handled by formatter tooling once configured

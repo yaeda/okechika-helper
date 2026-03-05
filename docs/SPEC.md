@@ -83,3 +83,4 @@
 ## 8. 開発時の注意
 
 - `iframe`（特に `srcdoc` / `about:blank`）内での動作確認は、`build` 版の拡張を推奨する
+- lint 実行時は生成物ディレクトリ（`.output/`, `.wxt/`）を対象外とする
