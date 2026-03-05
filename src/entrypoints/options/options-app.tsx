@@ -37,7 +37,7 @@ function parseMappingsCsv(csvText: string): DecodeMap {
   });
 
   if (header[0] !== 'source' || header[1] !== 'target') {
-    throw new Error('CSV header must be source,target');
+    throw new Error('CSV のヘッダーは source,target である必要があります。');
   }
 
   const mappings: DecodeMap = {};
@@ -103,7 +103,7 @@ function parseCsvRows(csvText: string): string[][] {
   }
 
   if (inQuotes) {
-    throw new Error('CSV contains an unterminated quoted field');
+    throw new Error('CSV の引用符が閉じられていません。');
   }
 
   if (field.length > 0 || row.length > 0) {
@@ -285,13 +285,13 @@ export function OptionsApp() {
       const mappings = parseMappingsCsv(text);
       await setMappings(mappings);
       setImportError('');
-      setImportMessage(`Imported ${Object.keys(mappings).length} rows.`);
+      setImportMessage(`${Object.keys(mappings).length} 件をインポートしました。`);
     } catch (error) {
       setImportMessage('');
       setImportError(
         error instanceof Error
           ? error.message
-          : 'Failed to import CSV. Please check the file format.'
+          : 'CSV のインポートに失敗しました。ファイル形式を確認してください。'
       );
     } finally {
       event.currentTarget.value = '';
@@ -299,22 +299,20 @@ export function OptionsApp() {
   }
 
   if (loading || !settings || !table) {
-    return <main className="page">Loading...</main>;
+    return <main className="page">読み込み中...</main>;
   }
 
   return (
     <main className="page">
       <header className="hero">
         <p className="eyebrow">桶地下 helper</p>
-        <h1>Decode Table Manager</h1>
-        <p className="sub">
-          Review mappings, export CSV, and control where annotation runs.
-        </p>
+        <h1>変換テーブル管理</h1>
+        <p className="sub">変換表の確認・CSV入出力・対象URLの管理ができます。</p>
       </header>
 
       <section className="panel">
         <div className="panel-header">
-          <h2>Target URLs</h2>
+          <h2>対象URL</h2>
           <button
             type="button"
             className="secondary"
@@ -322,19 +320,17 @@ export function OptionsApp() {
               void handleResetDefaultDomains();
             }}
           >
-            Reset to Default
+            初期値に戻す
           </button>
         </div>
 
-        <p className="caption">
-          Add or remove target hosts. Enter either a full URL or a host.
-        </p>
+        <p className="caption">対象ホストを追加・削除できます。URL またはホストを入力してください。</p>
 
         <div className="domain-input-row">
           <input
             type="text"
             value={newDomainInput}
-            placeholder="e.g. https://example.com or example.com"
+            placeholder="例: https://example.com または example.com"
             onChange={(event) => {
               setNewDomainInput(event.currentTarget.value);
               setDomainError('');
@@ -352,7 +348,7 @@ export function OptionsApp() {
               void handleAddDomain();
             }}
           >
-            Add
+            追加
           </button>
         </div>
 
@@ -360,7 +356,7 @@ export function OptionsApp() {
 
         <ul className="domain-list">
           {settings.enabledDomains.length === 0 ? (
-            <li className="empty">No target URLs configured.</li>
+            <li className="empty">対象URLは未設定です。</li>
           ) : (
             settings.enabledDomains.map((domain) => (
               <li key={domain} className="domain-item">
@@ -372,7 +368,7 @@ export function OptionsApp() {
                     void handleRemoveDomain(domain);
                   }}
                 >
-                  Remove
+                  削除
                 </button>
               </li>
             ))
@@ -382,7 +378,7 @@ export function OptionsApp() {
 
       <section className="panel">
         <div className="panel-header">
-          <h2>Decode Table</h2>
+          <h2>変換テーブル</h2>
           <div className="button-group">
             <input
               ref={importFileInputRef}
@@ -398,10 +394,10 @@ export function OptionsApp() {
               className="secondary"
               onClick={() => importFileInputRef.current?.click()}
             >
-              Import CSV
+              CSVインポート
             </button>
             <button type="button" onClick={() => downloadCsv(table.mappings)}>
-              Export CSV
+              CSVエクスポート
             </button>
           </div>
         </div>
