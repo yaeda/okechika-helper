@@ -5,10 +5,10 @@ const STORAGE_KEYS = {
   settings: 'settings'
 } as const;
 
-export const DEFAULT_DOMAINS = ['www.pub-riddle.com', 'www.qtes9gu0k.xyz'];
+export const DEFAULT_ROOT_URLS = ['https://www.pub-riddle.com/', 'https://www.qtes9gu0k.xyz/'];
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
-  enabledDomains: DEFAULT_DOMAINS
+  enabledRootUrls: DEFAULT_ROOT_URLS
 };
 
 export const DEFAULT_TABLE: DecodeTable = {
@@ -29,8 +29,16 @@ export async function getState(): Promise<ExtensionState> {
 
   const table = (result[STORAGE_KEYS.table] as DecodeTable | undefined) ?? DEFAULT_TABLE;
   const rawSettings = result[STORAGE_KEYS.settings] as
-    | (Partial<ExtensionSettings> & { enableAllSites?: boolean })
+    | (Partial<ExtensionSettings> & { enabledDomains?: string[]; enableAllSites?: boolean })
     | undefined;
+  const legacyDomains = rawSettings?.enabledDomains ?? [];
+  const storedRootUrls = rawSettings?.enabledRootUrls ?? [];
+  const nextRootUrls = (storedRootUrls.length > 0 ? storedRootUrls : legacyDomains).map((value) => {
+    if (isHttpUrl(value)) {
+      return normalizeRootUrl(value);
+    }
+    return normalizeRootUrl(`https://${normalizeHost(value)}/`);
+  });
 
   return {
     table: {
@@ -38,7 +46,7 @@ export async function getState(): Promise<ExtensionState> {
       updatedAt: table.updatedAt ?? null
     },
     settings: {
-      enabledDomains: (rawSettings?.enabledDomains ?? DEFAULT_DOMAINS).map(normalizeHost)
+      enabledRootUrls: nextRootUrls.length > 0 ? nextRootUrls : DEFAULT_ROOT_URLS
     }
   };
 }
@@ -46,7 +54,7 @@ export async function getState(): Promise<ExtensionState> {
 export async function setSettings(settings: ExtensionSettings): Promise<void> {
   await getSyncStorage().set({
     [STORAGE_KEYS.settings]: {
-      enabledDomains: settings.enabledDomains.map(normalizeHost)
+      enabledRootUrls: settings.enabledRootUrls.map(normalizeRootUrl)
     } satisfies ExtensionSettings
   });
 }
@@ -70,9 +78,27 @@ export async function upsertMappings(entries: DecodeMap): Promise<void> {
   await setMappings(nextMappings);
 }
 
-export function shouldRunOnHost(settings: ExtensionSettings, host: string): boolean {
-  const normalizedHost = normalizeHost(host);
-  return settings.enabledDomains.some((domain) => isSameHostOrWwwPair(normalizedHost, domain));
+export function shouldRunOnUrl(settings: ExtensionSettings, url: string): boolean {
+  return resolveMatchedRootUrl(settings, url) !== null;
+}
+
+export function resolveMatchedRootUrl(settings: ExtensionSettings, url: string): string | null {
+  const matched = settings.enabledRootUrls
+    .map(normalizeRootUrl)
+    .filter((rootUrl) => isUrlWithinRoot(url, rootUrl));
+
+  if (matched.length === 0) {
+    return null;
+  }
+
+  // Prefer the most specific root URL when multiple roots match the same page.
+  matched.sort((a, b) => {
+    const aPathLength = new URL(a).pathname.length;
+    const bPathLength = new URL(b).pathname.length;
+    return bPathLength - aPathLength;
+  });
+
+  return matched[0] ?? null;
 }
 
 export function normalizeHost(host: string): string {
@@ -95,6 +121,36 @@ function isSameHostOrWwwPair(host: string, domain: string): boolean {
   }
 
   return false;
+}
+
+export function normalizeRootUrl(value: string): string {
+  const url = new URL(value);
+  const pathname = url.pathname.endsWith('/') ? url.pathname : `${url.pathname}/`;
+  return `${url.protocol}//${normalizeHost(url.hostname)}${pathname}`;
+}
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function isUrlWithinRoot(urlValue: string, rootUrlValue: string): boolean {
+  try {
+    const current = new URL(urlValue);
+    const root = new URL(normalizeRootUrl(rootUrlValue));
+
+    if (current.protocol !== root.protocol) {
+      return false;
+    }
+
+    if (!isSameHostOrWwwPair(normalizeHost(current.hostname), normalizeHost(root.hostname))) {
+      return false;
+    }
+
+    const currentPath = current.pathname.endsWith('/') ? current.pathname : `${current.pathname}/`;
+    return currentPath.startsWith(root.pathname);
+  } catch {
+    return false;
+  }
 }
 
 export function toCsv(mappings: DecodeMap): string {

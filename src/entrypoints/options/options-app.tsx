@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 
 import {
-  DEFAULT_DOMAINS,
+  DEFAULT_ROOT_URLS,
   getState,
-  normalizeHost,
+  normalizeRootUrl,
   setMappings,
   setSettings,
   toCsv
@@ -114,7 +114,7 @@ function parseCsvRows(csvText: string): string[][] {
   return rows;
 }
 
-function toDomainInput(rawValue: string): string | null {
+function toRootUrlInput(rawValue: string): string | null {
   const trimmed = rawValue.trim();
   if (!trimmed) {
     return null;
@@ -128,7 +128,11 @@ function toDomainInput(rawValue: string): string | null {
       return null;
     }
 
-    return normalizeHost(url.hostname);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return null;
+    }
+
+    return normalizeRootUrl(url.toString());
   } catch {
     return null;
   }
@@ -152,8 +156,8 @@ export function OptionsApp() {
   const [settings, setLocalSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
   const [loading, setLoading] = useState(true);
-  const [newDomainInput, setNewDomainInput] = useState('');
-  const [domainError, setDomainError] = useState('');
+  const [newRootUrlInput, setNewRootUrlInput] = useState('');
+  const [rootUrlError, setRootUrlError] = useState('');
   const [importMessage, setImportMessage] = useState('');
   const [importError, setImportError] = useState('');
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -224,54 +228,54 @@ export function OptionsApp() {
       .sort(([a], [b]) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   }, [table]);
 
-  async function saveDomains(domains: string[]): Promise<void> {
+  async function saveRootUrls(rootUrls: string[]): Promise<void> {
     if (!settings) {
       return;
     }
 
-    const uniqueDomains = Array.from(new Set(domains.map(normalizeHost))).filter(Boolean);
+    const uniqueRootUrls = Array.from(new Set(rootUrls.map(normalizeRootUrl))).filter(Boolean);
     const nextSettings: ExtensionSettings = {
-      enabledDomains: uniqueDomains
+      enabledRootUrls: uniqueRootUrls
     };
 
     setLocalSettings(nextSettings);
     await setSettings(nextSettings);
   }
 
-  async function handleAddDomain(): Promise<void> {
+  async function handleAddRootUrl(): Promise<void> {
     if (!settings) {
       return;
     }
 
-    const parsed = toDomainInput(newDomainInput);
+    const parsed = toRootUrlInput(newRootUrlInput);
     if (!parsed) {
-      setDomainError('有効な URL またはホストを入力してください。');
+      setRootUrlError('有効な URL またはホストを入力してください。');
       return;
     }
 
-    if (settings.enabledDomains.includes(parsed)) {
-      setDomainError('同じホストはすでに登録されています。');
+    if (settings.enabledRootUrls.includes(parsed)) {
+      setRootUrlError('同じルートURLはすでに登録されています。');
       return;
     }
 
-    setDomainError('');
-    setNewDomainInput('');
-    await saveDomains([...settings.enabledDomains, parsed]);
+    setRootUrlError('');
+    setNewRootUrlInput('');
+    await saveRootUrls([...settings.enabledRootUrls, parsed]);
   }
 
-  async function handleRemoveDomain(domain: string): Promise<void> {
+  async function handleRemoveRootUrl(rootUrl: string): Promise<void> {
     if (!settings) {
       return;
     }
 
-    const nextDomains = settings.enabledDomains.filter((item) => item !== domain);
-    await saveDomains(nextDomains);
+    const nextRootUrls = settings.enabledRootUrls.filter((item) => item !== rootUrl);
+    await saveRootUrls(nextRootUrls);
   }
 
-  async function handleResetDefaultDomains(): Promise<void> {
-    setDomainError('');
-    setNewDomainInput('');
-    await saveDomains(DEFAULT_DOMAINS);
+  async function handleResetDefaultRootUrls(): Promise<void> {
+    setRootUrlError('');
+    setNewRootUrlInput('');
+    await saveRootUrls(DEFAULT_ROOT_URLS);
   }
 
   async function handleImportCsv(event: ChangeEvent<HTMLInputElement>): Promise<void> {
@@ -312,60 +316,62 @@ export function OptionsApp() {
 
       <section className="panel">
         <div className="panel-header">
-          <h2>対象URL</h2>
+          <h2>対象ルートURL</h2>
           <button
             type="button"
             className="secondary"
             onClick={() => {
-              void handleResetDefaultDomains();
+              void handleResetDefaultRootUrls();
             }}
           >
             初期値に戻す
           </button>
         </div>
 
-        <p className="caption">対象ホストを追加・削除できます。URL またはホストを入力してください。</p>
+        <p className="caption">
+          対象ルートURLを追加・削除できます。URL またはホストを入力してください。
+        </p>
 
         <div className="domain-input-row">
           <input
             type="text"
-            value={newDomainInput}
-            placeholder="例: https://example.com または example.com"
+            value={newRootUrlInput}
+            placeholder="例: https://example.com/path/ または example.com"
             onChange={(event) => {
-              setNewDomainInput(event.currentTarget.value);
-              setDomainError('');
+              setNewRootUrlInput(event.currentTarget.value);
+              setRootUrlError('');
             }}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault();
-                void handleAddDomain();
+                void handleAddRootUrl();
               }
             }}
           />
           <button
             type="button"
             onClick={() => {
-              void handleAddDomain();
+              void handleAddRootUrl();
             }}
           >
             追加
           </button>
         </div>
 
-        <p className="caption error">{domainError}</p>
+        <p className="caption error">{rootUrlError}</p>
 
         <ul className="domain-list">
-          {settings.enabledDomains.length === 0 ? (
-            <li className="empty">対象URLは未設定です。</li>
+          {settings.enabledRootUrls.length === 0 ? (
+            <li className="empty">対象ルートURLは未設定です。</li>
           ) : (
-            settings.enabledDomains.map((domain) => (
-              <li key={domain} className="domain-item">
-                <span>{domain}</span>
+            settings.enabledRootUrls.map((rootUrl) => (
+              <li key={rootUrl} className="domain-item">
+                <span>{rootUrl}</span>
                 <button
                   type="button"
                   className="danger"
                   onClick={() => {
-                    void handleRemoveDomain(domain);
+                    void handleRemoveRootUrl(rootUrl);
                   }}
                 >
                   削除

@@ -33,41 +33,10 @@ function createInitialTooltipState(): TooltipState {
   };
 }
 
-function resolveSearchBaseUrl(): URL | null {
-  const current = new URL(window.location.href);
-  if (current.protocol === 'http:' || current.protocol === 'https:') {
-    return new URL('/', current.origin);
-  }
-
-  if (document.referrer) {
-    try {
-      const referrer = new URL(document.referrer);
-      return new URL('/', referrer.origin);
-    } catch {
-      // Ignore malformed referrer.
-    }
-  }
-
-  try {
-    const topUrl = new URL(window.top?.location.href ?? '');
-    if (topUrl.protocol === 'http:' || topUrl.protocol === 'https:') {
-      return new URL('/', topUrl.origin);
-    }
-  } catch {
-    // Ignore cross-origin access errors.
-  }
-
-  return null;
-}
-
-function navigateToSearchPage(query: string): void {
-  const baseUrl = resolveSearchBaseUrl();
-  if (!baseUrl) {
-    return;
-  }
-
-  baseUrl.searchParams.set('s', query);
-  const destination = baseUrl.toString();
+function navigateToSearchPage(rootUrl: string, query: string): void {
+  const destinationUrl = new URL(rootUrl);
+  destinationUrl.searchParams.set('s', query);
+  const destination = destinationUrl.toString();
 
   try {
     if (window.top && window.top !== window) {
@@ -84,7 +53,8 @@ function navigateToSearchPage(query: string): void {
 export function createTooltipUi(
   ctx: ContentScriptContext,
   onSubmitMappings: (entries: DecodeMap) => Promise<void>,
-  decodeSelectionText: (text: string) => string
+  decodeSelectionText: (text: string) => string,
+  getSearchRootUrl: () => string | null
 ): TooltipUi {
   const ui = createIntegratedUi<TooltipMounted>(ctx, {
     position: 'overlay',
@@ -171,7 +141,12 @@ export function createTooltipUi(
                 return;
               }
 
-              navigateToSearchPage(query);
+              const rootUrl = getSearchRootUrl();
+              if (!rootUrl) {
+                return;
+              }
+
+              navigateToSearchPage(rootUrl, query);
               state = {
                 ...state,
                 visible: false,

@@ -1,15 +1,16 @@
-import { getState, shouldRunOnHost, upsertMappings } from '@/lib/storage';
+import { getState, resolveMatchedRootUrl, shouldRunOnUrl, upsertMappings } from '@/lib/storage';
 import type { DecodeMap } from '@/lib/types';
 import {
   createAnnotationController,
   type AnnotationController
 } from '@/entrypoints/content/annotation';
 import { getSelectionForUnknownGlyph, isTranslatableGlyphChar } from '@/entrypoints/content/glyph';
-import { getHostForMatching } from '@/entrypoints/content/host';
+import { getPageUrlForMatching } from '@/entrypoints/content/host';
 import { createTooltipUi, type TooltipUi } from '@/entrypoints/content/tooltip-ui';
 import './style.css';
 
 let currentMappings: DecodeMap = {};
+let currentSearchRootUrl: string | null = null;
 let isActive = false;
 let observer: MutationObserver | null = null;
 
@@ -32,8 +33,9 @@ async function refreshActivation(
   const state = await getState();
   currentMappings = state.table.mappings;
   annotation.setMappings(currentMappings);
-
-  const nextIsActive = shouldRunOnHost(state.settings, await getHostForMatching());
+  const pageUrl = await getPageUrlForMatching();
+  currentSearchRootUrl = resolveMatchedRootUrl(state.settings, pageUrl);
+  const nextIsActive = shouldRunOnUrl(state.settings, pageUrl);
 
   if (nextIsActive === isActive) {
     if (isActive) {
@@ -91,7 +93,8 @@ export default defineContentScript({
         annotation.updateExistingRubies();
         window.getSelection()?.removeAllRanges();
       },
-      decodeSelectedText
+      decodeSelectedText,
+      () => currentSearchRootUrl
     );
 
     void refreshActivation(tooltip, annotation);

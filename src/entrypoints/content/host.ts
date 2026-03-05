@@ -1,23 +1,20 @@
-export async function getHostForMatching(): Promise<string> {
-  const directHost = window.location.hostname;
-  if (directHost) {
-    return directHost;
+export async function getPageUrlForMatching(): Promise<string> {
+  if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+    return window.location.href;
   }
 
   try {
-    const topHost = window.top?.location.hostname;
-    if (topHost) {
-      return topHost;
+    const topUrl = window.top?.location.href;
+    if (topUrl && (topUrl.startsWith('http://') || topUrl.startsWith('https://'))) {
+      return topUrl;
     }
   } catch {
     // Ignore cross-origin access errors.
   }
 
   if (document.referrer) {
-    try {
-      return new URL(document.referrer).hostname;
-    } catch {
-      return '';
+    if (document.referrer.startsWith('http://') || document.referrer.startsWith('https://')) {
+      return document.referrer;
     }
   }
 

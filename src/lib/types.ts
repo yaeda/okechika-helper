@@ -6,7 +6,7 @@ export interface DecodeTable {
 }
 
 export interface ExtensionSettings {
-  enabledDomains: string[];
+  enabledRootUrls: string[];
 }
 
 export interface ExtensionState {
