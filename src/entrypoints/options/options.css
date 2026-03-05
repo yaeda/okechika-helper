@@ -270,3 +270,15 @@ thead th {
   margin: 14px 0 6px;
   font-size: 15px;
 }
+
+.credit-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+}
+
+.credit-list a {
+  color: #8a3514;
+}

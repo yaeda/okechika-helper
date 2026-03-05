@@ -582,6 +582,49 @@ export function OptionsApp() {
           </div>
         )}
       </section>
+
+      <section className="panel">
+        <h2>権利について</h2>
+        <p className="caption">桶地下は第四境界のコンテンツです。</p>
+        <ul className="credit-list">
+          <li>
+            第四境界:{' '}
+            <a href="https://www.daiyonkyokai.net/" target="_blank" rel="noreferrer">
+              https://www.daiyonkyokai.net/
+            </a>
+          </li>
+          <li>
+            桶地下 調査の手引き:{' '}
+            <a
+              href="https://www.daiyonkyokai.net/bps/guide/78fghuvtgy7/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              https://www.daiyonkyokai.net/bps/guide/78fghuvtgy7/
+            </a>
+          </li>
+        </ul>
+
+        <p className="caption">
+          この拡張機能はファンメイド作品です。第四境界とは関係がなく、権利を侵害する意図はありません。
+        </p>
+
+        <h3 className="subsection-title">この拡張機能へのコンタクト先</h3>
+        <ul className="credit-list">
+          <li>
+            X:{' '}
+            <a href="https://x.com/yaeda" target="_blank" rel="noreferrer">
+              x.com/yaeda
+            </a>
+          </li>
+          <li>
+            GitHub:{' '}
+            <a href="https://github.com/yaeda/okechika-helper" target="_blank" rel="noreferrer">
+              github.com/yaeda/okechika-helper
+            </a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 }
