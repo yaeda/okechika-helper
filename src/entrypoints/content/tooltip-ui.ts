@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { createIntegratedUi } from 'wxt/utils/content-script-ui/integrated';
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 
+import { OKECHIKA_NUMBER_CHARS } from '@/lib/okechika-chars';
 import type { DecodeMap } from '@/lib/types';
 import { filterTranslatableGlyphChars } from '@/entrypoints/content/glyph';
 import { Tooltip, type TooltipState } from '@/entrypoints/content/Tooltip';
@@ -160,8 +161,22 @@ export function createTooltipUi(
               void (async () => {
                 const sourceChars = filterTranslatableGlyphChars(state.selectedText);
                 const targetChars = Array.from(state.inputValue);
+                const selectedSingleNumberChar =
+                  sourceChars.length === 1 && OKECHIKA_NUMBER_CHARS.includes(sourceChars[0] ?? '');
 
-                if (targetChars.length !== sourceChars.length) {
+                if (sourceChars.length === 0) {
+                  state = {
+                    ...state,
+                    visible: false,
+                    selectedText: '',
+                    inputValue: '',
+                    error: ''
+                  };
+                  render();
+                  return;
+                }
+
+                if (!selectedSingleNumberChar && targetChars.length !== sourceChars.length) {
                   state = {
                     ...state,
                     error: '入力文字数は選択文字数と同じにしてください'
@@ -171,12 +186,19 @@ export function createTooltipUi(
                 }
 
                 const entries: DecodeMap = {};
-                targetChars.forEach((target, index) => {
-                  const source = sourceChars[index];
-                  if (source) {
-                    entries[source] = target;
+                if (selectedSingleNumberChar) {
+                  const source = sourceChars[0];
+                  if (source && targetChars.length > 0) {
+                    entries[source] = state.inputValue;
                   }
-                });
+                } else {
+                  targetChars.forEach((target, index) => {
+                    const source = sourceChars[index];
+                    if (source) {
+                      entries[source] = target;
+                    }
+                  });
+                }
 
                 if (Object.keys(entries).length === 0) {
                   state = {
