@@ -151,8 +151,31 @@ function formatUpdatedAt(value: string | null): string {
   return date.toLocaleString();
 }
 
+function maskRootUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    const maskedHost = url.hostname
+      .split('.')
+      .map((part, index, all) => {
+        if (index === all.length - 1) {
+          return part;
+        }
+        if (part.length <= 2) {
+          return '*'.repeat(part.length);
+        }
+        return `${part[0]}${'*'.repeat(part.length - 2)}${part[part.length - 1]}`;
+      })
+      .join('.');
+
+    return `${url.protocol}//${maskedHost}${url.pathname}`;
+  } catch {
+    return value.replace(/./g, '*');
+  }
+}
+
 export function OptionsApp() {
   const [displayMode, setDisplayMode] = useState<'source' | 'target' | 'both'>('both');
+  const [showRootUrls, setShowRootUrls] = useState(false);
   const [settings, setLocalSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
   const [loading, setLoading] = useState(true);
@@ -317,15 +340,24 @@ export function OptionsApp() {
       <section className="panel">
         <div className="panel-header">
           <h2>対象ルートURL</h2>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => {
-              void handleResetDefaultRootUrls();
-            }}
-          >
-            初期値に戻す
-          </button>
+          <div className="button-group">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setShowRootUrls((prev) => !prev)}
+            >
+              {showRootUrls ? 'URLを隠す' : 'URLを表示'}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                void handleResetDefaultRootUrls();
+              }}
+            >
+              初期値に戻す
+            </button>
+          </div>
         </div>
 
         <p className="caption">
@@ -366,7 +398,7 @@ export function OptionsApp() {
           ) : (
             settings.enabledRootUrls.map((rootUrl) => (
               <li key={rootUrl} className="domain-item">
-                <span>{rootUrl}</span>
+                <span>{showRootUrls ? rootUrl : maskRootUrl(rootUrl)}</span>
                 <button
                   type="button"
                   className="danger"
