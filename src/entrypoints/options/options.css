@@ -82,6 +82,12 @@ body {
   gap: 12px;
 }
 
+.button-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 button {
   border: 1px solid transparent;
   border-radius: 10px;
@@ -153,6 +159,15 @@ button:hover {
 .error {
   color: #b42318;
   min-height: 1.2em;
+}
+
+.success {
+  color: #1d7a44;
+  min-height: 1.2em;
+}
+
+.hidden-file-input {
+  display: none;
 }
 
 .table-wrap {

@@ -1,6 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 
-import { DEFAULT_DOMAINS, getState, normalizeHost, setSettings, toCsv } from '@/lib/storage';
+import {
+  DEFAULT_DOMAINS,
+  getState,
+  normalizeHost,
+  setMappings,
+  setSettings,
+  toCsv
+} from '@/lib/storage';
 import type { DecodeMap, DecodeTable, ExtensionSettings } from '@/lib/types';
 
 function downloadCsv(mappings: DecodeMap): void {
@@ -14,6 +22,95 @@ function downloadCsv(mappings: DecodeMap): void {
   anchor.click();
 
   URL.revokeObjectURL(url);
+}
+
+function parseMappingsCsv(csvText: string): DecodeMap {
+  const rows = parseCsvRows(csvText);
+  if (rows.length === 0) {
+    return {};
+  }
+
+  const header = rows[0].map((value, index) => {
+    const normalized = value.trim().toLowerCase();
+    return index === 0 ? normalized.replace(/^\ufeff/, '') : normalized;
+  });
+
+  if (header[0] !== 'source' || header[1] !== 'target') {
+    throw new Error('CSV header must be source,target');
+  }
+
+  const mappings: DecodeMap = {};
+  for (let i = 1; i < rows.length; i += 1) {
+    const source = rows[i]?.[0] ?? '';
+    const target = rows[i]?.[1] ?? '';
+    if (!source) {
+      continue;
+    }
+    mappings[source] = target;
+  }
+
+  return mappings;
+}
+
+function parseCsvRows(csvText: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < csvText.length; i += 1) {
+    const char = csvText[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (csvText[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+      continue;
+    }
+
+    if (char === ',') {
+      row.push(field);
+      field = '';
+      continue;
+    }
+
+    if (char === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+      continue;
+    }
+
+    if (char === '\r') {
+      continue;
+    }
+
+    field += char;
+  }
+
+  if (inQuotes) {
+    throw new Error('CSV contains an unterminated quoted field');
+  }
+
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+
+  return rows;
 }
 
 function toDomainInput(rawValue: string): string | null {
@@ -42,6 +139,9 @@ export function OptionsApp() {
   const [loading, setLoading] = useState(true);
   const [newDomainInput, setNewDomainInput] = useState('');
   const [domainError, setDomainError] = useState('');
+  const [importMessage, setImportMessage] = useState('');
+  const [importError, setImportError] = useState('');
+  const importFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -129,6 +229,30 @@ export function OptionsApp() {
     await saveDomains(DEFAULT_DOMAINS);
   }
 
+  async function handleImportCsv(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.currentTarget.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const mappings = parseMappingsCsv(text);
+      await setMappings(mappings);
+      setImportError('');
+      setImportMessage(`Imported ${Object.keys(mappings).length} rows.`);
+    } catch (error) {
+      setImportMessage('');
+      setImportError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to import CSV. Please check the file format.'
+      );
+    } finally {
+      event.currentTarget.value = '';
+    }
+  }
+
   if (loading || !settings || !table) {
     return <main className="page">Loading...</main>;
   }
@@ -214,12 +338,32 @@ export function OptionsApp() {
       <section className="panel">
         <div className="panel-header">
           <h2>Decode Table</h2>
-          <button type="button" onClick={() => downloadCsv(table.mappings)}>
-            Export CSV
-          </button>
+          <div className="button-group">
+            <input
+              ref={importFileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden-file-input"
+              onChange={(event) => {
+                void handleImportCsv(event);
+              }}
+            />
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => importFileInputRef.current?.click()}
+            >
+              Import CSV
+            </button>
+            <button type="button" onClick={() => downloadCsv(table.mappings)}>
+              Export CSV
+            </button>
+          </div>
         </div>
         <p className="caption">Columns: source,target</p>
         <p className="caption">Updated At: {table.updatedAt ?? 'Never'}</p>
+        <p className="caption success">{importMessage}</p>
+        <p className="caption error">{importError}</p>
 
         <div className="table-wrap">
           <table>
