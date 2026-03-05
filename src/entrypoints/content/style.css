@@ -1,5 +1,5 @@
 ruby.okechika-ruby rt {
-  color: #6b7280;
+  color: rgb(from currentColor r g b / 0.72);
   font-size: 0.65em;
   letter-spacing: 0;
   user-select: none;
@@ -24,7 +24,7 @@ ruby.okechika-ruby rt {
   font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
 }
 
-#okechika-tooltip form {
+#okechika-tooltip .okechika-form {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 6px;
@@ -74,7 +74,9 @@ ruby.okechika-ruby rt {
 }
 
 #okechika-tooltip .okechika-selected-unknown {
-  font-family: Underground, UnknownGlyphs, 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+  font-family:
+    Underground, UnknownGlyphs, 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP',
+    sans-serif;
   font-size: 15px;
 }
 
