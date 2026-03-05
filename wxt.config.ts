@@ -9,10 +9,10 @@ export default defineConfig({
     permissions: ['storage'],
     host_permissions: ['<all_urls>']
   },
-   webExt: {
+  webExt: {
     startUrls: [
-      "https://www.qtes9gu0k.xyz",
-      "https://www.pub-riddle.com/class-1/",
-    ],
-  },
+      'https://www.qtes9gu0k.xyz',
+      'https://www.pub-riddle.com/class-1/'
+    ]
+  }
 });
