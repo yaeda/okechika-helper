@@ -4,8 +4,8 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
   srcDir: 'src',
   manifest: {
-    name: 'Okechika Helper',
-    description: 'Helper extension for decoding OKECHIKA glyphs.',
+    name: '桶地下 Helper',
+    description: '桶地下文字の解読作業を支援するためのブラウザ拡張です。',
     action: {
       default_title: '桶地下 Helper 設定を開く'
     },
