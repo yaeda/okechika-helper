@@ -1,4 +1,4 @@
-export const OKECHIKA_CHARS: string[] = [
+export const OKECHIKA_TEXT_CHARS: string[] = [
   '一',
   '丁',
   '丂',
@@ -1399,6 +1399,10 @@ export const OKECHIKA_CHARS: string[] = [
   '卵',
   '卶',
   '卷',
+];
+
+
+export const OKECHIKA_NUMBER_CHARS: string[] = [
   'ァ',
   'ア',
   'ィ',
@@ -1468,4 +1472,8 @@ export const OKECHIKA_CHARS: string[] = [
   'ャ',
   'ヤ',
   'ュ',
-  'ユ',];
+  'ユ',
+];
+
+
+export const OKECHIKA_CHARS: string[] = [...OKECHIKA_TEXT_CHARS, ...OKECHIKA_NUMBER_CHARS];

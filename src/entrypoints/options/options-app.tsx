@@ -9,7 +9,11 @@ import {
   setSettings,
   toCsv
 } from '@/lib/storage';
-import { OKECHIKA_CHARS } from '@/lib/okechika-chars';
+import {
+  OKECHIKA_CHARS,
+  OKECHIKA_NUMBER_CHARS,
+  OKECHIKA_TEXT_CHARS
+} from '@/lib/okechika-chars';
 import type { DecodeMap, DecodeTable, ExtensionSettings } from '@/lib/types';
 
 function downloadCsv(mappings: DecodeMap): void {
@@ -213,18 +217,29 @@ export function OptionsApp() {
     };
   }, []);
 
-  const glyphRows = useMemo(() => {
+  const glyphSections = useMemo(() => {
     const mappings = table?.mappings ?? {};
-    const cells = OKECHIKA_CHARS.map((source) => ({
+    const baseCells = OKECHIKA_TEXT_CHARS.map((source) => ({
+      source,
+      target: mappings[source] ?? '?'
+    }));
+    const numberLikeCells = OKECHIKA_NUMBER_CHARS.map((source) => ({
       source,
       target: mappings[source] ?? '?'
     }));
 
-    const chunked: Array<Array<{ source: string; target: string }>> = [];
-    for (let i = 0; i < cells.length; i += 20) {
-      chunked.push(cells.slice(i, i + 20));
+    function toRows(source: Array<{ source: string; target: string }>) {
+      const chunked: Array<Array<{ source: string; target: string }>> = [];
+      for (let i = 0; i < source.length; i += 20) {
+        chunked.push(source.slice(i, i + 20));
+      }
+      return chunked;
     }
-    return chunked;
+
+    return {
+      baseRows: toRows(baseCells),
+      numberLikeRows: toRows(numberLikeCells)
+    };
   }, [table]);
 
   const decodeProgress = useMemo(() => {
@@ -476,7 +491,7 @@ export function OptionsApp() {
         <div className="table-wrap">
           <table>
             <tbody>
-              {glyphRows.map((row, rowIndex) => (
+              {glyphSections.baseRows.map((row, rowIndex) => (
                 <tr key={`glyph-row-${rowIndex}`}>
                   {row.map(({ source, target }) => (
                     <td key={source} className="glyph-cell">
@@ -502,6 +517,46 @@ export function OptionsApp() {
             </tbody>
           </table>
         </div>
+
+        {glyphSections.numberLikeRows.length > 0 ? (
+          <>
+            <div className="table-wrap table-wrap-second">
+              <table>
+                <tbody>
+                  {glyphSections.numberLikeRows.map((row, rowIndex) => (
+                    <tr key={`glyph-number-row-${rowIndex}`}>
+                      {row.map(({ source, target }) => (
+                        <td key={source} className="glyph-cell">
+                          {displayMode === 'source' ? (
+                            <span className={target === '?' ? 'unknown-target' : undefined}>
+                              {source}
+                            </span>
+                          ) : null}
+                          {displayMode === 'target' ? (
+                            <span className={target === '?' ? 'unknown-target' : undefined}>
+                              {target}
+                            </span>
+                          ) : null}
+                          {displayMode === 'both' ? (
+                            <>
+                              <span className={target === '?' ? 'unknown-target' : undefined}>
+                                {source}
+                              </span>
+                              <span> | </span>
+                              <span className={target === '?' ? 'unknown-target' : undefined}>
+                                {target}
+                              </span>
+                            </>
+                          ) : null}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : null}
 
         <h3 className="subsection-title">その他の文字</h3>
         {otherMappings.length === 0 ? (
