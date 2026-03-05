@@ -9,6 +9,7 @@ import {
   setSettings,
   toCsv
 } from '@/lib/storage';
+import { requestRootUrlPermission } from '@/lib/host-permissions';
 import {
   OKECHIKA_CHARS,
   OKECHIKA_NUMBER_CHARS,
@@ -296,6 +297,12 @@ export function OptionsApp() {
       return;
     }
 
+    const granted = await requestRootUrlPermission(parsed);
+    if (!granted) {
+      setRootUrlError('この URL を有効化するには、権限の許可が必要です。');
+      return;
+    }
+
     setRootUrlError('');
     setNewRootUrlInput('');
     await saveRootUrls([...settings.enabledRootUrls, parsed]);
@@ -376,7 +383,7 @@ export function OptionsApp() {
         </div>
 
         <p className="caption">
-          対象ルートURLを追加・削除できます。URL またはホストを入力してください。
+          対象ルートURLを追加・削除できます。追加時にブラウザ権限の許可を求めることがあります。
         </p>
 
         <div className="domain-input-row">

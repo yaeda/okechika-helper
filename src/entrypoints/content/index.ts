@@ -73,11 +73,7 @@ function observeDomChanges(annotation: AnnotationController): void {
 }
 
 export default defineContentScript({
-  matches: ['<all_urls>'],
-  allFrames: true,
-  matchAboutBlank: true,
-  matchOriginAsFallback: true,
-  runAt: 'document_idle',
+  registration: 'runtime',
   main(ctx) {
     const annotation = createAnnotationController();
 

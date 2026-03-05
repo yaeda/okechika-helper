@@ -6,8 +6,14 @@ export default defineConfig({
   manifest: {
     name: 'Okechika Helper',
     description: 'Helper extension for decoding OKECHIKA glyphs.',
-    permissions: ['storage'],
-    host_permissions: ['<all_urls>'],
+    permissions: ['storage', 'scripting'],
+    host_permissions: [
+      'https://www.pub-riddle.com/*',
+      'https://pub-riddle.com/*',
+      'https://www.qtes9gu0k.xyz/*',
+      'https://qtes9gu0k.xyz/*'
+    ],
+    optional_host_permissions: ['http://*/*', 'https://*/*'],
     options_page: 'options.html'
   },
   webExt: {
