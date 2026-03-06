@@ -358,36 +358,41 @@ export function OptionsApp() {
 
   return (
     <main className="page">
-      <header className="hero">
-        <div className="hero-head">
-          <div>
-            <p className="eyebrow">
-              <span>桶地下 helper</span>
-              <span className="version-badge">v{extensionVersion}</span>
-            </p>
-            <div className="hero-title-row">
-              <h1>設定</h1>
-              <p className="sub hero-sub-inline">変換表の確認・CSV入出力・対象URLの管理ができます。</p>
+      <div className="content-column">
+        <header className="hero">
+          <div className="hero-head">
+            <div>
+              <p className="eyebrow">
+                <span>桶地下 helper</span>
+                <span className="version-badge">v{extensionVersion}</span>
+              </p>
+              <div className="hero-title-row">
+                <h1>設定</h1>
+                <p className="sub hero-sub-inline">変換表の確認・CSV入出力・対象URLの管理ができます。</p>
+              </div>
+            </div>
+            <div className="hero-side">
+              <nav className="hero-links" aria-label="サポートリンク">
+                <a
+                  href="https://github.com/yaeda/okechika-helper/issues/new/choose"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  不具合報告
+                </a>
+                <a
+                  href="https://github.com/yaeda/okechika-helper/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  更新内容
+                </a>
+              </nav>
             </div>
           </div>
-          <div className="hero-side">
-            <nav className="hero-links" aria-label="サポートリンク">
-              <a
-                href="https://github.com/yaeda/okechika-helper/issues/new/choose"
-                target="_blank"
-                rel="noreferrer"
-              >
-                不具合報告
-              </a>
-              <a href="https://github.com/yaeda/okechika-helper/releases" target="_blank" rel="noreferrer">
-                更新内容
-              </a>
-            </nav>
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <section className="panel">
+        <section className="panel">
         <div className="panel-header">
           <h2>対象ルートURL</h2>
           <div className="button-group">
@@ -473,9 +478,9 @@ export function OptionsApp() {
             ))
           )}
         </ul>
-      </section>
+        </section>
 
-      <section className="panel">
+        <section className="panel">
         <div className="panel-header">
           <h2>変換テーブル</h2>
           <div className="button-group">
@@ -637,9 +642,9 @@ export function OptionsApp() {
             </table>
           </div>
         )}
-      </section>
+        </section>
 
-      <section className="panel">
+        <section className="panel">
         <h2>権利について</h2>
         <p className="caption">桶地下は第四境界のコンテンツです。</p>
         <ul className="credit-list">
@@ -680,7 +685,8 @@ export function OptionsApp() {
             </a>
           </li>
         </ul>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

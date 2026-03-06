@@ -28,8 +28,23 @@ body {
   max-width: min(1600px, calc(100vw - 24px));
   margin: 0 auto;
   padding: 28px 20px 40px;
+}
+
+.page > * {
+  min-width: 0;
+}
+
+.content-column {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   display: grid;
   gap: 16px;
+}
+
+.content-column > * {
+  width: 100%;
+  min-width: 0;
 }
 
 .hero h1 {
@@ -124,6 +139,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 16px;
+  min-width: 0;
 }
 
 .panel h2 {
@@ -291,6 +307,8 @@ button:hover {
 }
 
 .table-wrap {
+  width: fit-content;
+  min-width: 0;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
