@@ -81,10 +81,15 @@ export default defineContentScript({
       ctx,
       async (entries) => {
         await upsertMappings(entries);
-        currentMappings = {
-          ...currentMappings,
-          ...entries
-        };
+        const nextMappings: DecodeMap = { ...currentMappings };
+        for (const [source, target] of Object.entries(entries)) {
+          if (target === '?') {
+            delete nextMappings[source];
+            continue;
+          }
+          nextMappings[source] = target;
+        }
+        currentMappings = nextMappings;
         annotation.setMappings(currentMappings);
         annotation.updateExistingRubies();
         window.getSelection()?.removeAllRanges();

@@ -49,7 +49,7 @@ function parseMappingsCsv(csvText: string): DecodeMap {
   for (let i = 1; i < rows.length; i += 1) {
     const source = rows[i]?.[0] ?? '';
     const target = rows[i]?.[1] ?? '';
-    if (!source) {
+    if (!source || target === '?') {
       continue;
     }
     mappings[source] = target;

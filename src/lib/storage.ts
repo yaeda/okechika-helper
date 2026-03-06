@@ -60,9 +60,10 @@ export async function setSettings(settings: ExtensionSettings): Promise<void> {
 }
 
 export async function setMappings(mappings: DecodeMap): Promise<void> {
+  const normalizedMappings = normalizeMappings(mappings);
   await getSyncStorage().set({
     [STORAGE_KEYS.table]: {
-      mappings,
+      mappings: normalizedMappings,
       updatedAt: nowIso()
     } satisfies DecodeTable
   });
@@ -70,10 +71,14 @@ export async function setMappings(mappings: DecodeMap): Promise<void> {
 
 export async function upsertMappings(entries: DecodeMap): Promise<void> {
   const state = await getState();
-  const nextMappings = {
-    ...state.table.mappings,
-    ...entries
-  };
+  const nextMappings: DecodeMap = { ...state.table.mappings };
+  for (const [source, target] of Object.entries(entries)) {
+    if (target === '?') {
+      delete nextMappings[source];
+      continue;
+    }
+    nextMappings[source] = target;
+  }
 
   await setMappings(nextMappings);
 }
@@ -168,4 +173,8 @@ function escapeCsv(value: string): string {
   }
 
   return value;
+}
+
+function normalizeMappings(mappings: DecodeMap): DecodeMap {
+  return Object.fromEntries(Object.entries(mappings).filter(([, target]) => target !== '?'));
 }
