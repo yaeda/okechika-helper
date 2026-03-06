@@ -492,6 +492,95 @@ thead th {
   font-size: 15px;
 }
 
+.converter-section {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+
+.converter-textarea {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  resize: vertical;
+}
+
+.converter-output {
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #faf8f5;
+  min-height: 40px;
+  overflow-wrap: anywhere;
+}
+
+.converter-candidates {
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #faf8f5;
+  max-height: 200px;
+  overflow: auto;
+}
+
+.converter-segment {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.converter-segment:last-child {
+  margin-bottom: 0;
+}
+
+.converter-token {
+  font-weight: 700;
+  color: #4a3d32;
+}
+
+.converter-no-candidate {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.converter-choices {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.converter-tab-group {
+  display: inline-flex;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f3ede7;
+  margin-bottom: 10px;
+}
+
+.converter-tab-group .secondary {
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid var(--line);
+}
+
+.converter-tab-group .secondary:last-child {
+  border-right: 0;
+}
+
 .credit-list {
   margin: 8px 0 0;
   padding-left: 18px;
