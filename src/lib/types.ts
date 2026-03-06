@@ -7,6 +7,7 @@ export interface DecodeTable {
 
 export interface ExtensionSettings {
   enabledRootUrls: string[];
+  useSourceGlyphFontInOptions: boolean;
 }
 
 export interface ExtensionState {

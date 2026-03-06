@@ -8,7 +8,8 @@ const STORAGE_KEYS = {
 export const DEFAULT_ROOT_URLS = ['https://www.pub-riddle.com/', 'https://www.qtes9gu0k.xyz/'];
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
-  enabledRootUrls: DEFAULT_ROOT_URLS
+  enabledRootUrls: DEFAULT_ROOT_URLS,
+  useSourceGlyphFontInOptions: true
 };
 
 export const DEFAULT_TABLE: DecodeTable = {
@@ -33,6 +34,8 @@ export async function getState(): Promise<ExtensionState> {
     | undefined;
   const legacyDomains = rawSettings?.enabledDomains ?? [];
   const storedRootUrls = rawSettings?.enabledRootUrls ?? [];
+  const useSourceGlyphFontInOptions =
+    rawSettings?.useSourceGlyphFontInOptions ?? DEFAULT_SETTINGS.useSourceGlyphFontInOptions;
   const nextRootUrls = (storedRootUrls.length > 0 ? storedRootUrls : legacyDomains).map((value) => {
     if (isHttpUrl(value)) {
       return normalizeRootUrl(value);
@@ -46,7 +49,8 @@ export async function getState(): Promise<ExtensionState> {
       updatedAt: table.updatedAt ?? null
     },
     settings: {
-      enabledRootUrls: nextRootUrls.length > 0 ? nextRootUrls : DEFAULT_ROOT_URLS
+      enabledRootUrls: nextRootUrls.length > 0 ? nextRootUrls : DEFAULT_ROOT_URLS,
+      useSourceGlyphFontInOptions
     }
   };
 }
@@ -54,7 +58,8 @@ export async function getState(): Promise<ExtensionState> {
 export async function setSettings(settings: ExtensionSettings): Promise<void> {
   await getSyncStorage().set({
     [STORAGE_KEYS.settings]: {
-      enabledRootUrls: settings.enabledRootUrls.map(normalizeRootUrl)
+      enabledRootUrls: settings.enabledRootUrls.map(normalizeRootUrl),
+      useSourceGlyphFontInOptions: settings.useSourceGlyphFontInOptions
     } satisfies ExtensionSettings
   });
 }

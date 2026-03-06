@@ -178,6 +178,11 @@ function maskRootUrl(value: string): string {
   }
 }
 
+function joinClassNames(...names: Array<string | undefined>): string | undefined {
+  const filtered = names.filter(Boolean);
+  return filtered.length > 0 ? filtered.join(' ') : undefined;
+}
+
 export function OptionsApp() {
   const extensionVersion = chrome.runtime.getManifest().version;
   const [displayMode, setDisplayMode] = useState<'source' | 'target' | 'both'>('both');
@@ -268,18 +273,36 @@ export function OptionsApp() {
       .sort(([a], [b]) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   }, [table]);
 
+  async function saveSettings(nextSettings: ExtensionSettings): Promise<void> {
+    if (!settings) {
+      return;
+    }
+
+    setLocalSettings(nextSettings);
+    await setSettings(nextSettings);
+  }
+
   async function saveRootUrls(rootUrls: string[]): Promise<void> {
     if (!settings) {
       return;
     }
 
     const uniqueRootUrls = Array.from(new Set(rootUrls.map(normalizeRootUrl))).filter(Boolean);
-    const nextSettings: ExtensionSettings = {
+    await saveSettings({
+      ...settings,
       enabledRootUrls: uniqueRootUrls
-    };
+    });
+  }
 
-    setLocalSettings(nextSettings);
-    await setSettings(nextSettings);
+  async function handleToggleSourceGlyphFont(checked: boolean): Promise<void> {
+    if (!settings) {
+      return;
+    }
+
+    await saveSettings({
+      ...settings,
+      useSourceGlyphFontInOptions: checked
+    });
   }
 
   async function handleAddRootUrl(): Promise<void> {
@@ -514,28 +537,40 @@ export function OptionsApp() {
             解析進捗: {decodeProgress.decoded}/{decodeProgress.total}（
             {decodeProgress.percent.toFixed(1)}%）
           </p>
-          <div className="display-mode-group">
-            <button
-              type="button"
-              className={displayMode === 'source' ? 'secondary is-active' : 'secondary'}
-              onClick={() => setDisplayMode('source')}
-            >
-              変換前
-            </button>
-            <button
-              type="button"
-              className={displayMode === 'target' ? 'secondary is-active' : 'secondary'}
-              onClick={() => setDisplayMode('target')}
-            >
-              変換後
-            </button>
-            <button
-              type="button"
-              className={displayMode === 'both' ? 'secondary is-active' : 'secondary'}
-              onClick={() => setDisplayMode('both')}
-            >
-              両方表示
-            </button>
+          <div className="display-controls">
+            <label className="source-font-toggle">
+              <input
+                type="checkbox"
+                checked={settings.useSourceGlyphFontInOptions}
+                onChange={(event) => {
+                  void handleToggleSourceGlyphFont(event.currentTarget.checked);
+                }}
+              />
+              <span>変換前に桶地下フォントを適用</span>
+            </label>
+            <div className="display-mode-group">
+              <button
+                type="button"
+                className={displayMode === 'source' ? 'secondary is-active' : 'secondary'}
+                onClick={() => setDisplayMode('source')}
+              >
+                変換前
+              </button>
+              <button
+                type="button"
+                className={displayMode === 'target' ? 'secondary is-active' : 'secondary'}
+                onClick={() => setDisplayMode('target')}
+              >
+                変換後
+              </button>
+              <button
+                type="button"
+                className={displayMode === 'both' ? 'secondary is-active' : 'secondary'}
+                onClick={() => setDisplayMode('both')}
+              >
+                両方表示
+              </button>
+            </div>
           </div>
         </div>
 
@@ -547,14 +582,26 @@ export function OptionsApp() {
                   {row.map(({ source, target }) => (
                     <td key={source} className="glyph-cell">
                       {displayMode === 'source' ? (
-                        <span className={target === '?' ? 'unknown-target' : undefined}>{source}</span>
+                        <span
+                          className={joinClassNames(
+                            settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
+                            target === '?' ? 'unknown-target' : undefined
+                          )}
+                        >
+                          {source}
+                        </span>
                       ) : null}
                       {displayMode === 'target' ? (
                         <span className={target === '?' ? 'unknown-target' : undefined}>{target}</span>
                       ) : null}
                       {displayMode === 'both' ? (
                         <span className="glyph-pair">
-                          <span className={target === '?' ? 'unknown-target' : undefined}>
+                          <span
+                            className={joinClassNames(
+                              settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
+                              target === '?' ? 'unknown-target' : undefined
+                            )}
+                          >
                             {source}
                           </span>
                           <span
@@ -583,7 +630,12 @@ export function OptionsApp() {
                       {row.map(({ source, target }) => (
                         <td key={source} className="glyph-cell">
                           {displayMode === 'source' ? (
-                            <span className={target === '?' ? 'unknown-target' : undefined}>
+                            <span
+                              className={joinClassNames(
+                                settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
+                                target === '?' ? 'unknown-target' : undefined
+                              )}
+                            >
                               {source}
                             </span>
                           ) : null}
@@ -594,7 +646,12 @@ export function OptionsApp() {
                           ) : null}
                           {displayMode === 'both' ? (
                             <span className="glyph-pair">
-                              <span className={target === '?' ? 'unknown-target' : undefined}>
+                              <span
+                                className={joinClassNames(
+                                  settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
+                                  target === '?' ? 'unknown-target' : undefined
+                                )}
+                              >
                                 {source}
                               </span>
                               <span
@@ -634,7 +691,14 @@ export function OptionsApp() {
               <tbody>
                 {otherMappings.map(([source, target]) => (
                   <tr key={`other-${source}`}>
-                    <td className={target === '?' ? 'unknown-target' : undefined}>{source}</td>
+                    <td
+                      className={joinClassNames(
+                        settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
+                        target === '?' ? 'unknown-target' : undefined
+                      )}
+                    >
+                      {source}
+                    </td>
                     <td className={target === '?' ? 'unknown-target' : undefined}>{target}</td>
                   </tr>
                 ))}
