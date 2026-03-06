@@ -18,14 +18,26 @@ import {
 } from '@/lib/okechika-chars';
 import type { DecodeMap, DecodeTable, ExtensionSettings } from '@/lib/types';
 
-function downloadCsv(mappings: DecodeMap): void {
+async function hashText(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  const bytes = new Uint8Array(digest);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function downloadCsv(mappings: DecodeMap): Promise<void> {
   const csv = toCsv(mappings);
+  const translatedCount = Object.values(mappings).reduce((count, target) => {
+    return target && target !== '?' ? count + 1 : count;
+  }, 0);
+  const hash = (await hashText(csv)).slice(0, 8);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
 
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = 'okechika-table.csv';
+  anchor.download = `okechika-table-${translatedCount}-${hash}.csv`;
   anchor.click();
 
   URL.revokeObjectURL(url);
@@ -926,7 +938,12 @@ export function OptionsApp() {
             >
               CSVインポート
             </button>
-            <button type="button" onClick={() => downloadCsv(table.mappings)}>
+            <button
+              type="button"
+              onClick={() => {
+                void downloadCsv(table.mappings);
+              }}
+            >
               CSVエクスポート
             </button>
           </div>
