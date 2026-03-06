@@ -1,6 +1,40 @@
 # Changelog
 
 
+## v1.0.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v0.1.0...v1.0.0)
+
+### 🚀 Enhancements
+
+- **mapping:** Treat question mark input as reset ([2b3afd8](https://github.com/yaeda/okechika-helper/commit/2b3afd8))
+- **options:** Add open action for registered root urls ([e3d741c](https://github.com/yaeda/okechika-helper/commit/e3d741c))
+- **options:** Add header support links ([16faa8f](https://github.com/yaeda/okechika-helper/commit/16faa8f))
+- **options:** Align header and panels to centered table-width column ([96881c9](https://github.com/yaeda/okechika-helper/commit/96881c9))
+- **options:** Add source glyph font toggle and styling ([ed43a50](https://github.com/yaeda/okechika-helper/commit/ed43a50))
+- **options:** Support inline table cell editing ([e483562](https://github.com/yaeda/okechika-helper/commit/e483562))
+- **options:** Improve table edit and scroll affordances ([f2d5be1](https://github.com/yaeda/okechika-helper/commit/f2d5be1))
+- **options:** Add tabbed bidirectional converter panel ([4af7e0c](https://github.com/yaeda/okechika-helper/commit/4af7e0c))
+- **options:** Include decoded count and hash in csv export filename ([6182ffe](https://github.com/yaeda/okechika-helper/commit/6182ffe))
+
+### 🩹 Fixes
+
+- **options:** Adjust glyph divider style in table ([0932911](https://github.com/yaeda/okechika-helper/commit/0932911))
+- **runtime:** Stabilize content script registration on root url updates ([3c0c21e](https://github.com/yaeda/okechika-helper/commit/3c0c21e))
+
+### 📖 Documentation
+
+- Add screenshots under docs assets and update readme ([09364f1](https://github.com/yaeda/okechika-helper/commit/09364f1))
+- Add changelog ([fa4f68c](https://github.com/yaeda/okechika-helper/commit/fa4f68c))
+
+### 🏡 Chore
+
+- Remove unused okechika-moji list file ([cc00992](https://github.com/yaeda/okechika-helper/commit/cc00992))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v0.1.0
 
 
