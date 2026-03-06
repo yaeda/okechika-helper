@@ -1,5 +1,7 @@
 # Okechika Helper
 
+![Okechika Helper Screenshot](docs/assets/screen_1280x800.png)
+
 桶地下文字の解読作業を支援するためのブラウザ拡張です。
 
 ## 主な機能
