@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
+import type { ReactNode } from 'react';
 
 import {
   DEFAULT_ROOT_URLS,
@@ -181,6 +182,72 @@ function maskRootUrl(value: string): string {
 function joinClassNames(...names: Array<string | undefined>): string | undefined {
   const filtered = names.filter(Boolean);
   return filtered.length > 0 ? filtered.join(' ') : undefined;
+}
+
+function ScrollableTableWrap({
+  children,
+  className
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hasLeftFade, setHasLeftFade] = useState(false);
+  const [hasRightFade, setHasRightFade] = useState(false);
+
+  useEffect(() => {
+    function updateFadeVisibility(): void {
+      const element = containerRef.current;
+      if (!element) {
+        return;
+      }
+
+      const maxScrollLeft = Math.max(0, element.scrollWidth - element.clientWidth);
+      setHasLeftFade(element.scrollLeft > 0);
+      setHasRightFade(element.scrollLeft < maxScrollLeft - 1);
+    }
+
+    updateFadeVisibility();
+
+    const element = containerRef.current;
+    if (!element) {
+      return;
+    }
+
+    element.addEventListener('scroll', updateFadeVisibility, { passive: true });
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateFadeVisibility();
+    });
+    resizeObserver.observe(element);
+    const firstChild = element.firstElementChild;
+    if (firstChild) {
+      resizeObserver.observe(firstChild);
+    }
+
+    window.addEventListener('resize', updateFadeVisibility);
+
+    return () => {
+      element.removeEventListener('scroll', updateFadeVisibility);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateFadeVisibility);
+    };
+  }, []);
+
+  return (
+    <div
+      className={joinClassNames(
+        'table-wrap',
+        className,
+        hasLeftFade ? 'has-left-fade' : undefined,
+        hasRightFade ? 'has-right-fade' : undefined
+      )}
+    >
+      <div ref={containerRef} className="table-wrap-scroll">
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export function OptionsApp() {
@@ -691,7 +758,7 @@ export function OptionsApp() {
           </div>
         </div>
 
-        <div className="table-wrap">
+        <ScrollableTableWrap>
           <table>
             <tbody>
               {glyphSections.baseRows.map((row, rowIndex) => (
@@ -751,11 +818,11 @@ export function OptionsApp() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableTableWrap>
 
         {glyphSections.numberLikeRows.length > 0 ? (
           <>
-            <div className="table-wrap table-wrap-second">
+            <ScrollableTableWrap className="table-wrap-second">
               <table>
                 <tbody>
                   {glyphSections.numberLikeRows.map((row, rowIndex) => (
@@ -815,7 +882,7 @@ export function OptionsApp() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollableTableWrap>
           </>
         ) : null}
 
@@ -823,7 +890,7 @@ export function OptionsApp() {
         {otherMappings.length === 0 ? (
           <p className="caption">該当する文字はありません。</p>
         ) : (
-          <div className="table-wrap table-wrap-compact">
+          <ScrollableTableWrap className="table-wrap-compact">
             <table className="compact-table">
               <thead>
                 <tr>
@@ -862,7 +929,7 @@ export function OptionsApp() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTableWrap>
         )}
         </section>
 

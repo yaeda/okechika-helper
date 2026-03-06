@@ -349,10 +349,48 @@ button:hover {
   width: fit-content;
   min-width: 0;
   max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+  position: relative;
   border: 1px solid var(--line);
   border-radius: 10px;
+  overflow: hidden;
+}
+
+.table-wrap-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.table-wrap::before,
+.table-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 1;
+}
+
+.table-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, var(--paper), transparent);
+}
+
+.table-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, var(--paper), transparent);
+}
+
+.table-wrap.has-left-fade::before {
+  opacity: 1;
+}
+
+.table-wrap.has-right-fade::after {
+  opacity: 1;
 }
 
 .table-wrap-second {
@@ -378,7 +416,16 @@ th,
 td {
   text-align: center;
   border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
   padding: 6px;
+}
+
+tr > *:last-child {
+  border-right: 0;
+}
+
+.table-wrap-second tr > *:last-child {
+  border-right: 1px solid var(--line);
 }
 
 thead th {
