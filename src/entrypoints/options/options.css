@@ -196,6 +196,11 @@ button:hover {
   background: #fff;
 }
 
+.domain-item-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
 .empty {
   color: var(--muted);
   border: 1px dashed var(--line);

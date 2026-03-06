@@ -317,6 +317,10 @@ export function OptionsApp() {
     await saveRootUrls(nextRootUrls);
   }
 
+  function handleOpenRootUrl(rootUrl: string): void {
+    window.open(rootUrl, '_blank', 'noopener,noreferrer');
+  }
+
   async function handleResetDefaultRootUrls(): Promise<void> {
     setRootUrlError('');
     setNewRootUrlInput('');
@@ -421,15 +425,26 @@ export function OptionsApp() {
             settings.enabledRootUrls.map((rootUrl) => (
               <li key={rootUrl} className="domain-item">
                 <span>{showRootUrls ? rootUrl : maskRootUrl(rootUrl)}</span>
-                <button
-                  type="button"
-                  className="danger"
-                  onClick={() => {
-                    void handleRemoveRootUrl(rootUrl);
-                  }}
-                >
-                  削除
-                </button>
+                <div className="domain-item-actions">
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => {
+                      handleOpenRootUrl(rootUrl);
+                    }}
+                  >
+                    開く
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() => {
+                      void handleRemoveRootUrl(rootUrl);
+                    }}
+                  >
+                    削除
+                  </button>
+                </div>
               </li>
             ))
           )}
