@@ -509,13 +509,17 @@ export function OptionsApp() {
                         <span className={target === '?' ? 'unknown-target' : undefined}>{target}</span>
                       ) : null}
                       {displayMode === 'both' ? (
-                        <>
+                        <span className="glyph-pair">
                           <span className={target === '?' ? 'unknown-target' : undefined}>
                             {source}
                           </span>
-                          <span> | </span>
+                          <span
+                            className={target === '?' ? 'glyph-divider unknown-target' : 'glyph-divider'}
+                          >
+                            {'>'}
+                          </span>
                           <span className={target === '?' ? 'unknown-target' : undefined}>{target}</span>
-                        </>
+                        </span>
                       ) : null}
                     </td>
                   ))}
@@ -545,15 +549,21 @@ export function OptionsApp() {
                             </span>
                           ) : null}
                           {displayMode === 'both' ? (
-                            <>
+                            <span className="glyph-pair">
                               <span className={target === '?' ? 'unknown-target' : undefined}>
                                 {source}
                               </span>
-                              <span> | </span>
+                              <span
+                                className={
+                                  target === '?' ? 'glyph-divider unknown-target' : 'glyph-divider'
+                                }
+                              >
+                                {'>'}
+                              </span>
                               <span className={target === '?' ? 'unknown-target' : undefined}>
                                 {target}
                               </span>
-                            </>
+                            </span>
                           ) : null}
                         </td>
                       ))}

@@ -266,6 +266,17 @@ thead th {
   opacity: 0.55;
 }
 
+.glyph-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.glyph-divider {
+  font-size: 12px;
+  line-height: 1;
+}
+
 .subsection-title {
   margin: 14px 0 6px;
   font-size: 15px;
