@@ -194,7 +194,14 @@ export function OptionsApp() {
   const [rootUrlError, setRootUrlError] = useState('');
   const [importMessage, setImportMessage] = useState('');
   const [importError, setImportError] = useState('');
+  const [inlineEditError, setInlineEditError] = useState('');
+  const [editingCell, setEditingCell] = useState<{
+    source: string;
+    draft: string;
+    cellKey: string;
+  } | null>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
+  const skipBlurCommitRef = useRef(false);
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -375,6 +382,114 @@ export function OptionsApp() {
     }
   }
 
+  function startInlineEdit(source: string, currentTarget: string, cellKey: string): void {
+    setInlineEditError('');
+    setEditingCell({
+      source,
+      draft: currentTarget === '?' ? '' : currentTarget,
+      cellKey
+    });
+  }
+
+  function cancelInlineEdit(): void {
+    setEditingCell(null);
+  }
+
+  async function commitInlineEdit(source: string, draft: string): Promise<void> {
+    if (!table) {
+      return;
+    }
+
+    const currentValue = table.mappings[source] ?? '';
+    const shouldDelete = draft === '' || draft === '?';
+    if (shouldDelete && currentValue === '') {
+      setEditingCell(null);
+      return;
+    }
+    if (!shouldDelete && draft === currentValue) {
+      setEditingCell(null);
+      return;
+    }
+
+    const nextMappings: DecodeMap = { ...table.mappings };
+    if (shouldDelete) {
+      delete nextMappings[source];
+    } else {
+      nextMappings[source] = draft;
+    }
+
+    setEditingCell(null);
+    setInlineEditError('');
+    setTable({
+      mappings: nextMappings,
+      updatedAt: new Date().toISOString()
+    });
+
+    try {
+      await setMappings(nextMappings);
+    } catch {
+      setInlineEditError('セル編集の保存に失敗しました。もう一度お試しください。');
+    }
+  }
+
+  function renderCellEditor(source: string, cellKey: string): JSX.Element {
+    if (editingCell?.source === source && editingCell.cellKey === cellKey) {
+      return (
+        <input
+          className="cell-edit-input"
+          size={1}
+          value={editingCell.draft}
+          onChange={(event) => {
+            const nextDraft = event.currentTarget.value;
+            setEditingCell((prev) => {
+              if (!prev || prev.source !== source || prev.cellKey !== cellKey) {
+                return prev;
+              }
+              return {
+                ...prev,
+                draft: nextDraft
+              };
+            });
+          }}
+          onBlur={() => {
+            if (skipBlurCommitRef.current) {
+              skipBlurCommitRef.current = false;
+              return;
+            }
+            void commitInlineEdit(source, editingCell.draft);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              void commitInlineEdit(source, editingCell.draft);
+              return;
+            }
+
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              skipBlurCommitRef.current = true;
+              cancelInlineEdit();
+            }
+          }}
+          autoFocus
+        />
+      );
+    }
+
+    return <></>;
+  }
+
+  function renderEditableTarget(target: string): JSX.Element {
+    
+    return (
+      <span
+        className={joinClassNames('editable-target', target === '?' ? 'unknown-target' : undefined)}
+      >
+        {target}
+      </span>
+    );
+  }
+
   if (loading || !settings || !table) {
     return <main className="page">読み込み中...</main>;
   }
@@ -468,7 +583,7 @@ export function OptionsApp() {
           </button>
         </div>
 
-        <p className="caption error">{rootUrlError}</p>
+        {rootUrlError ? <p className="caption error">{rootUrlError}</p> : null}
 
         <ul className="domain-list">
           {settings.enabledRootUrls.length === 0 ? (
@@ -529,8 +644,10 @@ export function OptionsApp() {
           </div>
         </div>
         <p className="caption">最終更新日: {formatUpdatedAt(table.updatedAt)}</p>
-        <p className="caption success">{importMessage}</p>
-        <p className="caption error">{importError}</p>
+        {importMessage ? <p className="caption success">{importMessage}</p> : null}
+        {importError ? <p className="caption error">{importError}</p> : null}
+        {inlineEditError ? <p className="caption error">{inlineEditError}</p> : null}
+        <p className="caption">セルをダブルクリックすると、そのセルを直接編集できます。</p>
 
         <div className="display-row">
           <p className="caption progress">
@@ -580,8 +697,19 @@ export function OptionsApp() {
               {glyphSections.baseRows.map((row, rowIndex) => (
                 <tr key={`glyph-row-${rowIndex}`}>
                   {row.map(({ source, target }) => (
-                    <td key={source} className="glyph-cell">
-                      {displayMode === 'source' ? (
+                    <td
+                      key={source}
+                      className="glyph-cell editable-cell"
+                      onDoubleClick={() => startInlineEdit(source, target, source)}
+                      title="ダブルクリックで編集"
+                    >
+                      {editingCell?.source === source && editingCell.cellKey === source ? (
+                        renderCellEditor(source, source)
+                      ) : null}
+                      {editingCell?.source === source && editingCell.cellKey === source
+                        ? null
+                        : displayMode === 'source'
+                          ? (
                         <span
                           className={joinClassNames(
                             settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
@@ -590,11 +718,16 @@ export function OptionsApp() {
                         >
                           {source}
                         </span>
+                            )
+                          : null}
+                      {editingCell?.source === source && editingCell.cellKey === source
+                        ? null
+                        : displayMode === 'target' ? (
+                        renderEditableTarget(target)
                       ) : null}
-                      {displayMode === 'target' ? (
-                        <span className={target === '?' ? 'unknown-target' : undefined}>{target}</span>
-                      ) : null}
-                      {displayMode === 'both' ? (
+                      {editingCell?.source === source && editingCell.cellKey === source
+                        ? null
+                        : displayMode === 'both' ? (
                         <span className="glyph-pair">
                           <span
                             className={joinClassNames(
@@ -609,7 +742,7 @@ export function OptionsApp() {
                           >
                             {'>'}
                           </span>
-                          <span className={target === '?' ? 'unknown-target' : undefined}>{target}</span>
+                          {renderEditableTarget(target)}
                         </span>
                       ) : null}
                     </td>
@@ -628,8 +761,18 @@ export function OptionsApp() {
                   {glyphSections.numberLikeRows.map((row, rowIndex) => (
                     <tr key={`glyph-number-row-${rowIndex}`}>
                       {row.map(({ source, target }) => (
-                        <td key={source} className="glyph-cell">
-                          {displayMode === 'source' ? (
+                        <td
+                          key={source}
+                          className="glyph-cell editable-cell"
+                          onDoubleClick={() => startInlineEdit(source, target, source)}
+                          title="ダブルクリックで編集"
+                        >
+                          {editingCell?.source === source && editingCell.cellKey === source ? (
+                            renderCellEditor(source, source)
+                          ) : null}
+                          {editingCell?.source === source && editingCell.cellKey === source
+                            ? null
+                            : displayMode === 'source' ? (
                             <span
                               className={joinClassNames(
                                 settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
@@ -639,12 +782,14 @@ export function OptionsApp() {
                               {source}
                             </span>
                           ) : null}
-                          {displayMode === 'target' ? (
-                            <span className={target === '?' ? 'unknown-target' : undefined}>
-                              {target}
-                            </span>
+                          {editingCell?.source === source && editingCell.cellKey === source
+                            ? null
+                            : displayMode === 'target' ? (
+                            renderEditableTarget(target)
                           ) : null}
-                          {displayMode === 'both' ? (
+                          {editingCell?.source === source && editingCell.cellKey === source
+                            ? null
+                            : displayMode === 'both' ? (
                             <span className="glyph-pair">
                               <span
                                 className={joinClassNames(
@@ -661,9 +806,7 @@ export function OptionsApp() {
                               >
                                 {'>'}
                               </span>
-                              <span className={target === '?' ? 'unknown-target' : undefined}>
-                                {target}
-                              </span>
+                              {renderEditableTarget(target)}
                             </span>
                           ) : null}
                         </td>
@@ -693,13 +836,28 @@ export function OptionsApp() {
                   <tr key={`other-${source}`}>
                     <td
                       className={joinClassNames(
+                        'editable-cell',
                         settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
                         target === '?' ? 'unknown-target' : undefined
                       )}
+                      onDoubleClick={() => startInlineEdit(source, target, `other-source-${source}`)}
+                      title="ダブルクリックで編集"
                     >
-                      {source}
+                      {editingCell?.source === source &&
+                      editingCell.cellKey === `other-source-${source}`
+                        ? renderCellEditor(source, `other-source-${source}`)
+                        : source}
                     </td>
-                    <td className={target === '?' ? 'unknown-target' : undefined}>{target}</td>
+                    <td
+                      className="editable-cell"
+                      onDoubleClick={() => startInlineEdit(source, target, `other-target-${source}`)}
+                      title="ダブルクリックで編集"
+                    >
+                      {editingCell?.source === source &&
+                      editingCell.cellKey === `other-target-${source}`
+                        ? renderCellEditor(source, `other-target-${source}`)
+                        : renderEditableTarget(target)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -335,12 +335,10 @@ button:hover {
 
 .error {
   color: #b42318;
-  min-height: 1.2em;
 }
 
 .success {
   color: #1d7a44;
-  min-height: 1.2em;
 }
 
 .hidden-file-input {
@@ -419,6 +417,27 @@ thead th {
 .glyph-divider {
   font-size: 12px;
   line-height: 1;
+}
+
+.editable-cell {
+  cursor: text;
+}
+
+.editable-target {
+  user-select: none;
+}
+
+.cell-edit-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 4px;
+  font: inherit;
+  line-height: 1.2;
+  color: var(--ink);
+  box-sizing: border-box;
 }
 
 .subsection-title {
