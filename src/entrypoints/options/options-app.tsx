@@ -179,6 +179,7 @@ function maskRootUrl(value: string): string {
 }
 
 export function OptionsApp() {
+  const extensionVersion = chrome.runtime.getManifest().version;
   const [displayMode, setDisplayMode] = useState<'source' | 'target' | 'both'>('both');
   const [showRootUrls, setShowRootUrls] = useState(false);
   const [settings, setLocalSettings] = useState<ExtensionSettings | null>(null);
@@ -358,9 +359,32 @@ export function OptionsApp() {
   return (
     <main className="page">
       <header className="hero">
-        <p className="eyebrow">桶地下 helper</p>
-        <h1>変換テーブル管理</h1>
-        <p className="sub">変換表の確認・CSV入出力・対象URLの管理ができます。</p>
+        <div className="hero-head">
+          <div>
+            <p className="eyebrow">
+              <span>桶地下 helper</span>
+              <span className="version-badge">v{extensionVersion}</span>
+            </p>
+            <div className="hero-title-row">
+              <h1>設定</h1>
+              <p className="sub hero-sub-inline">変換表の確認・CSV入出力・対象URLの管理ができます。</p>
+            </div>
+          </div>
+          <div className="hero-side">
+            <nav className="hero-links" aria-label="サポートリンク">
+              <a
+                href="https://github.com/yaeda/okechika-helper/issues/new/choose"
+                target="_blank"
+                rel="noreferrer"
+              >
+                不具合報告
+              </a>
+              <a href="https://github.com/yaeda/okechika-helper/releases" target="_blank" rel="noreferrer">
+                更新内容
+              </a>
+            </nav>
+          </div>
+        </div>
       </header>
 
       <section className="panel">
