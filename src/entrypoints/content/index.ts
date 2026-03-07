@@ -1,12 +1,30 @@
-import { getState, resolveMatchedRootUrl, shouldRunOnUrl, upsertMappings } from '@/lib/storage';
+import { decodeTextWithMappings } from '@/lib/conversion';
+import {
+  getState,
+  resolveMatchedRootUrl,
+  shouldRunOnUrl,
+  toggleBookmark,
+  upsertMappings
+} from '@/lib/storage';
 import type { DecodeMap } from '@/lib/types';
 import {
   createAnnotationController,
   type AnnotationController
 } from '@/entrypoints/content/annotation';
-import { getSelectionForUnknownGlyph, isTranslatableGlyphChar } from '@/entrypoints/content/glyph';
+import {
+  createBookmarkButton,
+  pageHasGlyphContent,
+  type BookmarkButtonController
+} from '@/entrypoints/content/bookmark-ui';
+import {
+  getSelectionForUnknownGlyph,
+  isTranslatableGlyphChar
+} from '@/entrypoints/content/glyph';
 import { getPageUrlForMatching } from '@/entrypoints/content/host';
-import { createTooltipUi, type TooltipUi } from '@/entrypoints/content/tooltip-ui';
+import {
+  createTooltipUi,
+  type TooltipUi
+} from '@/entrypoints/content/tooltip-ui';
 import './style.css';
 
 let currentMappings: DecodeMap = {};
@@ -16,19 +34,18 @@ let observer: MutationObserver | null = null;
 
 function decodeSelectedText(text: string): string {
   return Array.from(text)
-    .map((char) => {
-      if (!isTranslatableGlyphChar(char)) {
-        return char;
-      }
-
-      return currentMappings[char] ?? '?';
-    })
+    .map((char) =>
+      isTranslatableGlyphChar(char)
+        ? decodeTextWithMappings(char, currentMappings)
+        : char
+    )
     .join('');
 }
 
 async function refreshActivation(
   tooltip: Pick<TooltipUi, 'hide'>,
-  annotation: AnnotationController
+  annotation: AnnotationController,
+  bookmarkButton: BookmarkButtonController
 ): Promise<void> {
   const state = await getState();
   currentMappings = state.table.mappings;
@@ -36,6 +53,11 @@ async function refreshActivation(
   const pageUrl = await getPageUrlForMatching();
   currentSearchRootUrl = resolveMatchedRootUrl(state.settings, pageUrl);
   const nextIsActive = shouldRunOnUrl(state.settings, pageUrl);
+  const isBookmarked = state.bookmarks.some(
+    (bookmark) => bookmark.url === pageUrl
+  );
+  bookmarkButton.setBookmarked(isBookmarked);
+  bookmarkButton.setVisible(nextIsActive && pageHasGlyphContent());
 
   if (nextIsActive === isActive) {
     if (isActive) {
@@ -50,19 +72,24 @@ async function refreshActivation(
   if (!isActive) {
     tooltip.hide();
     annotation.clearAnnotations();
+    bookmarkButton.setVisible(false);
     observer?.disconnect();
     return;
   }
 
   annotation.annotateDocument();
-  observeDomChanges(annotation);
+  observeDomChanges(annotation, bookmarkButton);
 }
 
-function observeDomChanges(annotation: AnnotationController): void {
+function observeDomChanges(
+  annotation: AnnotationController,
+  bookmarkButton: BookmarkButtonController
+): void {
   observer?.disconnect();
 
   observer = new MutationObserver(() => {
     annotation.annotateDocument();
+    bookmarkButton.setVisible(isActive && pageHasGlyphContent());
   });
 
   observer.observe(document.body, {
@@ -76,6 +103,19 @@ export default defineContentScript({
   registration: 'runtime',
   main(ctx) {
     const annotation = createAnnotationController();
+    const bookmarkButton = createBookmarkButton(async () => {
+      if (!isActive) {
+        return;
+      }
+
+      const pageUrl = await getPageUrlForMatching();
+      const nextState = await toggleBookmark({
+        url: pageUrl,
+        title: document.title || pageUrl,
+        rootUrl: currentSearchRootUrl
+      });
+      bookmarkButton.setBookmarked(nextState);
+    });
 
     const tooltip = createTooltipUi(
       ctx,
@@ -98,7 +138,7 @@ export default defineContentScript({
       () => currentSearchRootUrl
     );
 
-    void refreshActivation(tooltip, annotation);
+    void refreshActivation(tooltip, annotation, bookmarkButton);
 
     const handleSelection = () => {
       if (!isActive) {
@@ -115,7 +155,10 @@ export default defineContentScript({
     };
 
     document.addEventListener('mouseup', (event) => {
-      if (tooltip.contains(event.target)) {
+      if (
+        tooltip.contains(event.target) ||
+        bookmarkButton.contains(event.target)
+      ) {
         return;
       }
       window.setTimeout(handleSelection, 0);
@@ -133,8 +176,8 @@ export default defineContentScript({
         return;
       }
 
-      if (changes.decodeTable || changes.settings) {
-        void refreshActivation(tooltip, annotation);
+      if (changes.decodeTable || changes.settings || changes.bookmarks) {
+        void refreshActivation(tooltip, annotation, bookmarkButton);
       }
     });
   }
