@@ -1,6 +1,29 @@
 # Changelog
 
 
+## v1.1.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.0.0...v1.1.0)
+
+### 🚀 Enhancements
+
+- **options:** Refine options layout responsiveness ([42415e2](https://github.com/yaeda/okechika-helper/commit/42415e2))
+- **bookmarks:** Add page bookmarks ([d501221](https://github.com/yaeda/okechika-helper/commit/d501221))
+
+### 🏡 Chore
+
+- **package:** Add repository metadata ([4fcf3b4](https://github.com/yaeda/okechika-helper/commit/4fcf3b4))
+
+### 🤖 CI
+
+- **release:** Add release workflow ([a052a3d](https://github.com/yaeda/okechika-helper/commit/a052a3d))
+- **release:** Fix version output command ([13c642a](https://github.com/yaeda/okechika-helper/commit/13c642a))
+- **release:** Use submit environment and ignore local env file ([46a9bee](https://github.com/yaeda/okechika-helper/commit/46a9bee))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.0.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v0.1.0...v1.0.0)
