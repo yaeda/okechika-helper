@@ -1,0 +1,82 @@
+name: Release Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Submit in dry-run mode (no store publish, no git push, no GitHub release)'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Prepare release commit and tag with changelogen
+        run: npx --yes changelogen@latest --release
+
+      - name: Read bumped version
+        id: version
+        run: |
+          echo "next_version=$(node -p 'require(\"./package.json\").version')" >> "$GITHUB_OUTPUT"
+
+      - name: Build and create Chrome zip
+        run: npm run zip
+
+      - name: Build and create Firefox zip
+        run: npm run zip -- --browser firefox
+
+      - name: Submit Chrome package via wxt submit
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          CHROME_PUBLISH_TARGET: default
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: npm exec wxt submit -- --chrome-zip .output/*-chrome.zip
+
+      - name: Push release commit and tag
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git push origin HEAD
+          git push origin "v${{ steps.version.outputs.next_version }}"
+
+      - name: Create GitHub release from changelog
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: npx --yes changelogen@latest gh release "v${{ steps.version.outputs.next_version }}"
+
+      - name: Upload Chrome/Firefox zip to GitHub release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "v${{ steps.version.outputs.next_version }}" \
+            .output/*-chrome.zip \
+            .output/*-firefox.zip \
+            --clobber
