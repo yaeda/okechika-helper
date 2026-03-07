@@ -1,11 +1,21 @@
-import type { DecodeMap, DecodeTable, ExtensionSettings, ExtensionState } from '@/lib/types';
+import type {
+  BookmarkEntry,
+  DecodeMap,
+  DecodeTable,
+  ExtensionSettings,
+  ExtensionState
+} from '@/lib/types';
 
 const STORAGE_KEYS = {
   table: 'decodeTable',
-  settings: 'settings'
+  settings: 'settings',
+  bookmarks: 'bookmarks'
 } as const;
 
-export const DEFAULT_ROOT_URLS = ['https://www.pub-riddle.com/', 'https://www.qtes9gu0k.xyz/'];
+export const DEFAULT_ROOT_URLS = [
+  'https://www.pub-riddle.com/',
+  'https://www.qtes9gu0k.xyz/'
+];
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
   enabledRootUrls: DEFAULT_ROOT_URLS,
@@ -26,17 +36,29 @@ function getSyncStorage(): chrome.storage.StorageArea {
 }
 
 export async function getState(): Promise<ExtensionState> {
-  const result = await getSyncStorage().get([STORAGE_KEYS.table, STORAGE_KEYS.settings]);
+  const result = await getSyncStorage().get([
+    STORAGE_KEYS.table,
+    STORAGE_KEYS.settings,
+    STORAGE_KEYS.bookmarks
+  ]);
 
-  const table = (result[STORAGE_KEYS.table] as DecodeTable | undefined) ?? DEFAULT_TABLE;
+  const table =
+    (result[STORAGE_KEYS.table] as DecodeTable | undefined) ?? DEFAULT_TABLE;
+  const bookmarks = normalizeBookmarks(result[STORAGE_KEYS.bookmarks]);
   const rawSettings = result[STORAGE_KEYS.settings] as
-    | (Partial<ExtensionSettings> & { enabledDomains?: string[]; enableAllSites?: boolean })
+    | (Partial<ExtensionSettings> & {
+        enabledDomains?: string[];
+        enableAllSites?: boolean;
+      })
     | undefined;
   const legacyDomains = rawSettings?.enabledDomains ?? [];
   const storedRootUrls = rawSettings?.enabledRootUrls ?? [];
   const useSourceGlyphFontInOptions =
-    rawSettings?.useSourceGlyphFontInOptions ?? DEFAULT_SETTINGS.useSourceGlyphFontInOptions;
-  const nextRootUrls = (storedRootUrls.length > 0 ? storedRootUrls : legacyDomains).map((value) => {
+    rawSettings?.useSourceGlyphFontInOptions ??
+    DEFAULT_SETTINGS.useSourceGlyphFontInOptions;
+  const nextRootUrls = (
+    storedRootUrls.length > 0 ? storedRootUrls : legacyDomains
+  ).map((value) => {
     if (isHttpUrl(value)) {
       return normalizeRootUrl(value);
     }
@@ -49,9 +71,11 @@ export async function getState(): Promise<ExtensionState> {
       updatedAt: table.updatedAt ?? null
     },
     settings: {
-      enabledRootUrls: nextRootUrls.length > 0 ? nextRootUrls : DEFAULT_ROOT_URLS,
+      enabledRootUrls:
+        nextRootUrls.length > 0 ? nextRootUrls : DEFAULT_ROOT_URLS,
       useSourceGlyphFontInOptions
-    }
+    },
+    bookmarks
   };
 }
 
@@ -88,11 +112,48 @@ export async function upsertMappings(entries: DecodeMap): Promise<void> {
   await setMappings(nextMappings);
 }
 
-export function shouldRunOnUrl(settings: ExtensionSettings, url: string): boolean {
+export async function setBookmarks(bookmarks: BookmarkEntry[]): Promise<void> {
+  await getSyncStorage().set({
+    [STORAGE_KEYS.bookmarks]: normalizeBookmarks(bookmarks)
+  });
+}
+
+export async function removeBookmark(url: string): Promise<void> {
+  const state = await getState();
+  await setBookmarks(state.bookmarks.filter((entry) => entry.url !== url));
+}
+
+export async function toggleBookmark(
+  bookmark: BookmarkEntry
+): Promise<boolean> {
+  const state = await getState();
+  const normalizedBookmark = normalizeBookmark(bookmark);
+  const isBookmarked = state.bookmarks.some(
+    (entry) => entry.url === normalizedBookmark.url
+  );
+
+  if (isBookmarked) {
+    await setBookmarks(
+      state.bookmarks.filter((entry) => entry.url !== normalizedBookmark.url)
+    );
+    return false;
+  }
+
+  await setBookmarks([normalizedBookmark, ...state.bookmarks]);
+  return true;
+}
+
+export function shouldRunOnUrl(
+  settings: ExtensionSettings,
+  url: string
+): boolean {
   return resolveMatchedRootUrl(settings, url) !== null;
 }
 
-export function resolveMatchedRootUrl(settings: ExtensionSettings, url: string): string | null {
+export function resolveMatchedRootUrl(
+  settings: ExtensionSettings,
+  url: string
+): string | null {
   const matched = settings.enabledRootUrls
     .map(normalizeRootUrl)
     .filter((rootUrl) => isUrlWithinRoot(url, rootUrl));
@@ -126,7 +187,10 @@ function isSameHostOrWwwPair(host: string, domain: string): boolean {
     return true;
   }
 
-  if (normalizedDomain.startsWith('www.') && normalizedDomain.slice(4) === host) {
+  if (
+    normalizedDomain.startsWith('www.') &&
+    normalizedDomain.slice(4) === host
+  ) {
     return true;
   }
 
@@ -135,7 +199,9 @@ function isSameHostOrWwwPair(host: string, domain: string): boolean {
 
 export function normalizeRootUrl(value: string): string {
   const url = new URL(value);
-  const pathname = url.pathname.endsWith('/') ? url.pathname : `${url.pathname}/`;
+  const pathname = url.pathname.endsWith('/')
+    ? url.pathname
+    : `${url.pathname}/`;
   return `${url.protocol}//${normalizeHost(url.hostname)}${pathname}`;
 }
 
@@ -152,11 +218,18 @@ function isUrlWithinRoot(urlValue: string, rootUrlValue: string): boolean {
       return false;
     }
 
-    if (!isSameHostOrWwwPair(normalizeHost(current.hostname), normalizeHost(root.hostname))) {
+    if (
+      !isSameHostOrWwwPair(
+        normalizeHost(current.hostname),
+        normalizeHost(root.hostname)
+      )
+    ) {
       return false;
     }
 
-    const currentPath = current.pathname.endsWith('/') ? current.pathname : `${current.pathname}/`;
+    const currentPath = current.pathname.endsWith('/')
+      ? current.pathname
+      : `${current.pathname}/`;
     return currentPath.startsWith(root.pathname);
   } catch {
     return false;
@@ -181,5 +254,56 @@ function escapeCsv(value: string): string {
 }
 
 function normalizeMappings(mappings: DecodeMap): DecodeMap {
-  return Object.fromEntries(Object.entries(mappings).filter(([, target]) => target !== '?'));
+  return Object.fromEntries(
+    Object.entries(mappings).filter(([, target]) => target !== '?')
+  );
+}
+
+function normalizeBookmark(bookmark: BookmarkEntry): BookmarkEntry {
+  return {
+    url: bookmark.url.trim(),
+    title: bookmark.title.trim() || bookmark.url.trim(),
+    rootUrl: bookmark.rootUrl ? normalizeRootUrl(bookmark.rootUrl) : null
+  };
+}
+
+function normalizeBookmarks(value: unknown): BookmarkEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const nextBookmarks: BookmarkEntry[] = [];
+  const seenUrls = new Set<string>();
+
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') {
+      continue;
+    }
+
+    const url =
+      'url' in entry && typeof entry.url === 'string' ? entry.url.trim() : '';
+    const title =
+      'title' in entry && typeof entry.title === 'string'
+        ? entry.title.trim()
+        : url;
+    const rootUrl =
+      'rootUrl' in entry &&
+      typeof entry.rootUrl === 'string' &&
+      entry.rootUrl.trim()
+        ? normalizeRootUrl(entry.rootUrl)
+        : null;
+
+    if (!url || seenUrls.has(url)) {
+      continue;
+    }
+
+    seenUrls.add(url);
+    nextBookmarks.push({
+      url,
+      title: title || url,
+      rootUrl
+    });
+  }
+
+  return nextBookmarks;
 }

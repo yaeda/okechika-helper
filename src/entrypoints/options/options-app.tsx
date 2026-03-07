@@ -3,9 +3,16 @@ import type { ChangeEvent } from 'react';
 import type { ReactNode } from 'react';
 
 import {
+  containsKnownGlyphChars,
+  decodeTextWithMappings
+} from '@/lib/conversion';
+import {
+  DEFAULT_SETTINGS,
   DEFAULT_ROOT_URLS,
   getState,
   normalizeRootUrl,
+  removeBookmark,
+  resolveMatchedRootUrl,
   setMappings,
   setSettings,
   toCsv
@@ -16,14 +23,21 @@ import {
   OKECHIKA_NUMBER_CHARS,
   OKECHIKA_TEXT_CHARS
 } from '@/lib/okechika-chars';
-import type { DecodeMap, DecodeTable, ExtensionSettings } from '@/lib/types';
+import type {
+  BookmarkEntry,
+  DecodeMap,
+  DecodeTable,
+  ExtensionSettings
+} from '@/lib/types';
 
 async function hashText(input: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
   const digest = await crypto.subtle.digest('SHA-256', data);
   const bytes = new Uint8Array(digest);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(
+    ''
+  );
 }
 
 async function downloadCsv(mappings: DecodeMap): Promise<void> {
@@ -138,7 +152,9 @@ function toRootUrlInput(rawValue: string): string | null {
     return null;
   }
 
-  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  const withScheme = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
 
   try {
     const url = new URL(withScheme);
@@ -191,7 +207,9 @@ function maskRootUrl(value: string): string {
   }
 }
 
-function joinClassNames(...names: Array<string | undefined>): string | undefined {
+function joinClassNames(
+  ...names: Array<string | undefined>
+): string | undefined {
   const filtered = names.filter(Boolean);
   return filtered.length > 0 ? filtered.join(' ') : undefined;
 }
@@ -236,7 +254,10 @@ function ScrollableTableWrap({
         return;
       }
 
-      const maxScrollLeft = Math.max(0, element.scrollWidth - element.clientWidth);
+      const maxScrollLeft = Math.max(
+        0,
+        element.scrollWidth - element.clientWidth
+      );
       setHasLeftFade(element.scrollLeft > 0);
       setHasRightFade(element.scrollLeft < maxScrollLeft - 1);
     }
@@ -286,10 +307,13 @@ function ScrollableTableWrap({
 
 export function OptionsApp() {
   const extensionVersion = chrome.runtime.getManifest().version;
-  const [displayMode, setDisplayMode] = useState<'source' | 'target' | 'both'>('both');
+  const [displayMode, setDisplayMode] = useState<'source' | 'target' | 'both'>(
+    'both'
+  );
   const [showRootUrls, setShowRootUrls] = useState(false);
   const [settings, setLocalSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
+  const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [newRootUrlInput, setNewRootUrlInput] = useState('');
   const [rootUrlError, setRootUrlError] = useState('');
@@ -306,7 +330,12 @@ export function OptionsApp() {
   const [textToGlyphSelected, setTextToGlyphSelected] = useState<string[]>([]);
   const [converterMessage, setConverterMessage] = useState('');
   const [converterError, setConverterError] = useState('');
-  const [converterTab, setConverterTab] = useState<'glyphToText' | 'textToGlyph'>('glyphToText');
+  const [converterTab, setConverterTab] = useState<
+    'glyphToText' | 'textToGlyph'
+  >('glyphToText');
+  const [collapsedBookmarkGroups, setCollapsedBookmarkGroups] = useState<
+    Record<string, boolean>
+  >({});
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const skipBlurCommitRef = useRef(false);
 
@@ -315,6 +344,7 @@ export function OptionsApp() {
       const state = await getState();
       setLocalSettings(state.settings);
       setTable(state.table);
+      setBookmarks(state.bookmarks);
       setLoading(false);
     }
 
@@ -327,7 +357,7 @@ export function OptionsApp() {
         return;
       }
 
-      if (changes.decodeTable || changes.settings) {
+      if (changes.decodeTable || changes.settings || changes.bookmarks) {
         void load();
       }
     };
@@ -384,8 +414,89 @@ export function OptionsApp() {
     const defined = new Set(OKECHIKA_CHARS);
     return Object.entries(mappings)
       .filter(([source]) => !defined.has(source))
-      .sort(([a], [b]) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      .sort(([a], [b]) =>
+        a.localeCompare(b, undefined, { sensitivity: 'base' })
+      );
   }, [table]);
+
+  const bookmarkItems = useMemo(() => {
+    const mappings = table?.mappings ?? {};
+
+    return bookmarks.map((bookmark) => {
+      const hasGlyphTitle = containsKnownGlyphChars(bookmark.title);
+      const rootUrl =
+        bookmark.rootUrl ??
+        resolveMatchedRootUrl(settings ?? DEFAULT_SETTINGS, bookmark.url);
+
+      return {
+        ...bookmark,
+        rootUrl,
+        decodedTitle: hasGlyphTitle
+          ? decodeTextWithMappings(bookmark.title, mappings)
+          : null
+      };
+    });
+  }, [bookmarks, settings, table]);
+
+  const bookmarkGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      {
+        key: string;
+        label: string;
+        items: typeof bookmarkItems;
+      }
+    >();
+
+    for (const bookmark of bookmarkItems) {
+      const groupKey = bookmark.rootUrl ?? '__unmatched__';
+      const existing = groups.get(groupKey);
+
+      if (existing) {
+        existing.items.push(bookmark);
+        continue;
+      }
+
+      groups.set(groupKey, {
+        key: groupKey,
+        label: bookmark.rootUrl ?? '未分類のURL',
+        items: [bookmark]
+      });
+    }
+
+    return Array.from(groups.values()).sort((a, b) => {
+      if (a.key === '__unmatched__') {
+        return 1;
+      }
+      if (b.key === '__unmatched__') {
+        return -1;
+      }
+      return a.label.localeCompare(b.label);
+    });
+  }, [bookmarkItems]);
+
+  useEffect(() => {
+    setCollapsedBookmarkGroups((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      for (const group of bookmarkGroups) {
+        if (!(group.key in next)) {
+          next[group.key] = true;
+          changed = true;
+        }
+      }
+
+      for (const key of Object.keys(next)) {
+        if (!bookmarkGroups.some((group) => group.key === key)) {
+          delete next[key];
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [bookmarkGroups]);
 
   const glyphSourceSet = useMemo(() => new Set(OKECHIKA_CHARS), []);
 
@@ -420,7 +531,9 @@ export function OptionsApp() {
       candidates.sort((a, b) => a.localeCompare(b));
     }
 
-    const targets = Array.from(reverseMap.keys()).sort((a, b) => b.length - a.length);
+    const targets = Array.from(reverseMap.keys()).sort(
+      (a, b) => b.length - a.length
+    );
     const tokens = tokenizeByLongestTargets(textToGlyphInput, targets);
     return tokens.map((token) => ({
       token,
@@ -462,7 +575,9 @@ export function OptionsApp() {
       return;
     }
 
-    const uniqueRootUrls = Array.from(new Set(rootUrls.map(normalizeRootUrl))).filter(Boolean);
+    const uniqueRootUrls = Array.from(
+      new Set(rootUrls.map(normalizeRootUrl))
+    ).filter(Boolean);
     await saveSettings({
       ...settings,
       enabledRootUrls: uniqueRootUrls
@@ -512,12 +627,18 @@ export function OptionsApp() {
       return;
     }
 
-    const nextRootUrls = settings.enabledRootUrls.filter((item) => item !== rootUrl);
+    const nextRootUrls = settings.enabledRootUrls.filter(
+      (item) => item !== rootUrl
+    );
     await saveRootUrls(nextRootUrls);
   }
 
   function handleOpenRootUrl(rootUrl: string): void {
     window.open(rootUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  function handleOpenBookmark(url: string): void {
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   async function handleResetDefaultRootUrls(): Promise<void> {
@@ -526,7 +647,21 @@ export function OptionsApp() {
     await saveRootUrls(DEFAULT_ROOT_URLS);
   }
 
-  async function handleImportCsv(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+  async function handleRemoveBookmark(url: string): Promise<void> {
+    setBookmarks((prev) => prev.filter((bookmark) => bookmark.url !== url));
+    await removeBookmark(url);
+  }
+
+  function toggleBookmarkGroup(groupKey: string): void {
+    setCollapsedBookmarkGroups((prev) => ({
+      ...prev,
+      [groupKey]: !prev[groupKey]
+    }));
+  }
+
+  async function handleImportCsv(
+    event: ChangeEvent<HTMLInputElement>
+  ): Promise<void> {
     const file = event.currentTarget.files?.[0];
     if (!file) {
       return;
@@ -537,7 +672,9 @@ export function OptionsApp() {
       const mappings = parseMappingsCsv(text);
       await setMappings(mappings);
       setImportError('');
-      setImportMessage(`${Object.keys(mappings).length} 件をインポートしました。`);
+      setImportMessage(
+        `${Object.keys(mappings).length} 件をインポートしました。`
+      );
     } catch (error) {
       setImportMessage('');
       setImportError(
@@ -550,7 +687,10 @@ export function OptionsApp() {
     }
   }
 
-  async function handleCopyConverterResult(value: string, successMessage: string): Promise<void> {
+  async function handleCopyConverterResult(
+    value: string,
+    successMessage: string
+  ): Promise<void> {
     try {
       await navigator.clipboard.writeText(value);
       setConverterError('');
@@ -561,7 +701,11 @@ export function OptionsApp() {
     }
   }
 
-  function startInlineEdit(source: string, currentTarget: string, cellKey: string): void {
+  function startInlineEdit(
+    source: string,
+    currentTarget: string,
+    cellKey: string
+  ): void {
     setInlineEditError('');
     setEditingCell({
       source,
@@ -574,7 +718,10 @@ export function OptionsApp() {
     setEditingCell(null);
   }
 
-  async function commitInlineEdit(source: string, draft: string): Promise<void> {
+  async function commitInlineEdit(
+    source: string,
+    draft: string
+  ): Promise<void> {
     if (!table) {
       return;
     }
@@ -607,7 +754,9 @@ export function OptionsApp() {
     try {
       await setMappings(nextMappings);
     } catch {
-      setInlineEditError('セル編集の保存に失敗しました。もう一度お試しください。');
+      setInlineEditError(
+        'セル編集の保存に失敗しました。もう一度お試しください。'
+      );
     }
   }
 
@@ -659,10 +808,12 @@ export function OptionsApp() {
   }
 
   function renderEditableTarget(target: string): JSX.Element {
-    
     return (
       <span
-        className={joinClassNames('editable-target', target === '?' ? 'unknown-target' : undefined)}
+        className={joinClassNames(
+          'editable-target',
+          target === '?' ? 'unknown-target' : undefined
+        )}
       >
         {target}
       </span>
@@ -685,7 +836,9 @@ export function OptionsApp() {
               </p>
               <div className="hero-title-row">
                 <h1>設定</h1>
-                <p className="sub hero-sub-inline">変換表の確認・CSV入出力・対象URLの管理ができます。</p>
+                <p className="sub hero-sub-inline">
+                  変換表の確認・CSV入出力・対象URLの管理ができます。
+                </p>
               </div>
             </div>
             <div className="hero-side">
@@ -763,7 +916,9 @@ export function OptionsApp() {
               </button>
             </div>
 
-            {rootUrlError ? <p className="caption error">{rootUrlError}</p> : null}
+            {rootUrlError ? (
+              <p className="caption error">{rootUrlError}</p>
+            ) : null}
 
             <ul className="domain-list">
               {settings.enabledRootUrls.length === 0 ? (
@@ -805,20 +960,32 @@ export function OptionsApp() {
             <p className="caption">
               桶地下文字から日本語、日本語から桶地下文字へ変換できます。日本語→桶地下は候補から選択できます。
             </p>
-            {converterMessage ? <p className="caption success">{converterMessage}</p> : null}
-            {converterError ? <p className="caption error">{converterError}</p> : null}
+            {converterMessage ? (
+              <p className="caption success">{converterMessage}</p>
+            ) : null}
+            {converterError ? (
+              <p className="caption error">{converterError}</p>
+            ) : null}
 
             <div className="converter-tab-group">
               <button
                 type="button"
-                className={converterTab === 'glyphToText' ? 'secondary is-active' : 'secondary'}
+                className={
+                  converterTab === 'glyphToText'
+                    ? 'secondary is-active'
+                    : 'secondary'
+                }
                 onClick={() => setConverterTab('glyphToText')}
               >
                 桶地下 → 日本語
               </button>
               <button
                 type="button"
-                className={converterTab === 'textToGlyph' ? 'secondary is-active' : 'secondary'}
+                className={
+                  converterTab === 'textToGlyph'
+                    ? 'secondary is-active'
+                    : 'secondary'
+                }
                 onClick={() => setConverterTab('textToGlyph')}
               >
                 日本語 → 桶地下
@@ -839,12 +1006,17 @@ export function OptionsApp() {
                     }}
                     placeholder="桶地下文字を入力"
                   />
-                  <div className="converter-output">{glyphToTextOutput || '（変換結果）'}</div>
+                  <div className="converter-output">
+                    {glyphToTextOutput || '（変換結果）'}
+                  </div>
                   <button
                     type="button"
                     className="secondary"
                     onClick={() => {
-                      void handleCopyConverterResult(glyphToTextOutput, '日本語変換結果をコピーしました。');
+                      void handleCopyConverterResult(
+                        glyphToTextOutput,
+                        '日本語変換結果をコピーしました。'
+                      );
                     }}
                     disabled={!glyphToTextOutput}
                   >
@@ -871,10 +1043,17 @@ export function OptionsApp() {
                       <p className="caption">候補がここに表示されます。</p>
                     ) : (
                       textToGlyphSegments.map((segment, index) => (
-                        <div key={`segment-${index}-${segment.token}`} className="converter-segment">
-                          <span className="converter-token">{segment.token}</span>
+                        <div
+                          key={`segment-${index}-${segment.token}`}
+                          className="converter-segment"
+                        >
+                          <span className="converter-token">
+                            {segment.token}
+                          </span>
                           {segment.candidates.length === 0 ? (
-                            <span className="converter-no-candidate">候補なし</span>
+                            <span className="converter-no-candidate">
+                              候補なし
+                            </span>
                           ) : (
                             <div className="converter-choices">
                               {segment.candidates.map((candidate) => (
@@ -903,12 +1082,17 @@ export function OptionsApp() {
                       ))
                     )}
                   </div>
-                  <div className="converter-output">{textToGlyphOutput || '（変換結果）'}</div>
+                  <div className="converter-output">
+                    {textToGlyphOutput || '（変換結果）'}
+                  </div>
                   <button
                     type="button"
                     className="secondary"
                     onClick={() => {
-                      void handleCopyConverterResult(textToGlyphOutput, '桶地下文字変換結果をコピーしました。');
+                      void handleCopyConverterResult(
+                        textToGlyphOutput,
+                        '桶地下文字変換結果をコピーしました。'
+                      );
                     }}
                     disabled={!textToGlyphOutput}
                   >
@@ -921,299 +1105,459 @@ export function OptionsApp() {
         </div>
 
         <section className="panel">
-        <div className="panel-header">
-          <h2>変換テーブル</h2>
-          <div className="button-group">
-            <input
-              ref={importFileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden-file-input"
-              onChange={(event) => {
-                void handleImportCsv(event);
-              }}
-            />
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => importFileInputRef.current?.click()}
-            >
-              CSVインポート
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void downloadCsv(table.mappings);
-              }}
-            >
-              CSVエクスポート
-            </button>
+          <div className="panel-header">
+            <h2>ブックマーク</h2>
           </div>
-        </div>
-        <p className="caption">最終更新日: {formatUpdatedAt(table.updatedAt)}</p>
-        {importMessage ? <p className="caption success">{importMessage}</p> : null}
-        {importError ? <p className="caption error">{importError}</p> : null}
-        {inlineEditError ? <p className="caption error">{inlineEditError}</p> : null}
-        <p className="caption">セルをダブルクリックすると、そのセルを直接編集できます。</p>
-
-        <div className="display-row">
-          <p className="caption progress">
-            解析進捗: {decodeProgress.decoded}/{decodeProgress.total}（
-            {decodeProgress.percent.toFixed(1)}%）
+          <p className="caption">
+            桶地下文字のあるページで追加したブックマークです。タイトルに桶地下文字が含まれる場合は変換結果も表示します。
           </p>
-          <div className="display-controls">
-            <label className="source-font-toggle">
+
+          {bookmarkGroups.length === 0 ? (
+            <p className="caption">ブックマークはまだありません。</p>
+          ) : (
+            <div className="bookmark-groups">
+              {bookmarkGroups.map((group) => {
+                const isCollapsed = collapsedBookmarkGroups[group.key] ?? false;
+
+                return (
+                  <section key={group.key} className="bookmark-group">
+                    <button
+                      type="button"
+                      className="bookmark-group-toggle"
+                      onClick={() => {
+                        toggleBookmarkGroup(group.key);
+                      }}
+                      aria-expanded={!isCollapsed}
+                    >
+                      <span className="bookmark-group-toggle-main">
+                        <span
+                          className="bookmark-group-chevron"
+                          aria-hidden="true"
+                        >
+                          {isCollapsed ? '▸' : '▾'}
+                        </span>
+                        <span className="bookmark-group-label">
+                          {group.label}
+                        </span>
+                      </span>
+                      <span className="bookmark-group-count">
+                        {group.items.length}件
+                      </span>
+                    </button>
+
+                    {!isCollapsed ? (
+                      <ul className="bookmark-list">
+                        {group.items.map((bookmark) => (
+                          <li key={bookmark.url} className="bookmark-item">
+                            <div className="bookmark-main">
+                              <div className="bookmark-titles">
+                                <a
+                                  href={bookmark.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="bookmark-link"
+                                >
+                                  {bookmark.title}
+                                </a>
+                                {bookmark.decodedTitle ? (
+                                  <p className="caption bookmark-decoded-title">
+                                    {bookmark.decodedTitle}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <p className="caption bookmark-url">
+                                {bookmark.url}
+                              </p>
+                            </div>
+                            <div className="domain-item-actions">
+                              <button
+                                type="button"
+                                className="secondary"
+                                onClick={() => {
+                                  handleOpenBookmark(bookmark.url);
+                                }}
+                              >
+                                開く
+                              </button>
+                              <button
+                                type="button"
+                                className="danger"
+                                onClick={() => {
+                                  void handleRemoveBookmark(bookmark.url);
+                                }}
+                              >
+                                削除
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </section>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="panel-header">
+            <h2>変換テーブル</h2>
+            <div className="button-group">
               <input
-                type="checkbox"
-                checked={settings.useSourceGlyphFontInOptions}
+                ref={importFileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden-file-input"
                 onChange={(event) => {
-                  void handleToggleSourceGlyphFont(event.currentTarget.checked);
+                  void handleImportCsv(event);
                 }}
               />
-              <span>変換前に桶地下フォントを適用</span>
-            </label>
-            <div className="display-mode-group">
               <button
                 type="button"
-                className={displayMode === 'source' ? 'secondary is-active' : 'secondary'}
-                onClick={() => setDisplayMode('source')}
+                className="secondary"
+                onClick={() => importFileInputRef.current?.click()}
               >
-                変換前
+                CSVインポート
               </button>
               <button
                 type="button"
-                className={displayMode === 'target' ? 'secondary is-active' : 'secondary'}
-                onClick={() => setDisplayMode('target')}
+                onClick={() => {
+                  void downloadCsv(table.mappings);
+                }}
               >
-                変換後
-              </button>
-              <button
-                type="button"
-                className={displayMode === 'both' ? 'secondary is-active' : 'secondary'}
-                onClick={() => setDisplayMode('both')}
-              >
-                両方表示
+                CSVエクスポート
               </button>
             </div>
           </div>
-        </div>
+          <p className="caption">
+            最終更新日: {formatUpdatedAt(table.updatedAt)}
+          </p>
+          {importMessage ? (
+            <p className="caption success">{importMessage}</p>
+          ) : null}
+          {importError ? <p className="caption error">{importError}</p> : null}
+          {inlineEditError ? (
+            <p className="caption error">{inlineEditError}</p>
+          ) : null}
+          <p className="caption">
+            セルをダブルクリックすると、そのセルを直接編集できます。
+          </p>
 
-        <ScrollableTableWrap className="table-wrap-fill">
-          <table>
-            <tbody>
-              {glyphSections.baseRows.map((row, rowIndex) => (
-                <tr key={`glyph-row-${rowIndex}`}>
-                  {row.map(({ source, target }) => (
-                    <td
-                      key={source}
-                      className="glyph-cell editable-cell"
-                      onDoubleClick={() => startInlineEdit(source, target, source)}
-                      title="ダブルクリックで編集"
-                    >
-                      {editingCell?.source === source && editingCell.cellKey === source ? (
-                        renderCellEditor(source, source)
-                      ) : null}
-                      {editingCell?.source === source && editingCell.cellKey === source
-                        ? null
-                        : displayMode === 'source'
-                          ? (
-                        <span
-                          className={joinClassNames(
-                            settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
-                            target === '?' ? 'unknown-target' : undefined
-                          )}
-                        >
-                          {source}
-                        </span>
-                            )
+          <div className="display-row">
+            <p className="caption progress">
+              解析進捗: {decodeProgress.decoded}/{decodeProgress.total}（
+              {decodeProgress.percent.toFixed(1)}%）
+            </p>
+            <div className="display-controls">
+              <label className="source-font-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.useSourceGlyphFontInOptions}
+                  onChange={(event) => {
+                    void handleToggleSourceGlyphFont(
+                      event.currentTarget.checked
+                    );
+                  }}
+                />
+                <span>変換前に桶地下フォントを適用</span>
+              </label>
+              <div className="display-mode-group">
+                <button
+                  type="button"
+                  className={
+                    displayMode === 'source'
+                      ? 'secondary is-active'
+                      : 'secondary'
+                  }
+                  onClick={() => setDisplayMode('source')}
+                >
+                  変換前
+                </button>
+                <button
+                  type="button"
+                  className={
+                    displayMode === 'target'
+                      ? 'secondary is-active'
+                      : 'secondary'
+                  }
+                  onClick={() => setDisplayMode('target')}
+                >
+                  変換後
+                </button>
+                <button
+                  type="button"
+                  className={
+                    displayMode === 'both' ? 'secondary is-active' : 'secondary'
+                  }
+                  onClick={() => setDisplayMode('both')}
+                >
+                  両方表示
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <ScrollableTableWrap className="table-wrap-fill">
+            <table>
+              <tbody>
+                {glyphSections.baseRows.map((row, rowIndex) => (
+                  <tr key={`glyph-row-${rowIndex}`}>
+                    {row.map(({ source, target }) => (
+                      <td
+                        key={source}
+                        className="glyph-cell editable-cell"
+                        onDoubleClick={() =>
+                          startInlineEdit(source, target, source)
+                        }
+                        title="ダブルクリックで編集"
+                      >
+                        {editingCell?.source === source &&
+                        editingCell.cellKey === source
+                          ? renderCellEditor(source, source)
                           : null}
-                      {editingCell?.source === source && editingCell.cellKey === source
-                        ? null
-                        : displayMode === 'target' ? (
-                        renderEditableTarget(target)
-                      ) : null}
-                      {editingCell?.source === source && editingCell.cellKey === source
-                        ? null
-                        : displayMode === 'both' ? (
-                        <span className="glyph-pair">
+                        {editingCell?.source === source &&
+                        editingCell.cellKey === source ? null : displayMode ===
+                          'source' ? (
                           <span
                             className={joinClassNames(
-                              settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
+                              settings.useSourceGlyphFontInOptions
+                                ? 'source-glyph'
+                                : undefined,
                               target === '?' ? 'unknown-target' : undefined
                             )}
                           >
                             {source}
                           </span>
-                          <span
-                            className={target === '?' ? 'glyph-divider unknown-target' : 'glyph-divider'}
-                          >
-                            {'>'}
-                          </span>
-                          {renderEditableTarget(target)}
-                        </span>
-                      ) : null}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollableTableWrap>
-
-        {glyphSections.numberLikeRows.length > 0 ? (
-          <>
-            <ScrollableTableWrap className="table-wrap-fill table-wrap-second">
-              <table>
-                <tbody>
-                  {glyphSections.numberLikeRows.map((row, rowIndex) => (
-                    <tr key={`glyph-number-row-${rowIndex}`}>
-                      {row.map(({ source, target }) => (
-                        <td
-                          key={source}
-                          className="glyph-cell editable-cell"
-                          onDoubleClick={() => startInlineEdit(source, target, source)}
-                          title="ダブルクリックで編集"
-                        >
-                          {editingCell?.source === source && editingCell.cellKey === source ? (
-                            renderCellEditor(source, source)
-                          ) : null}
-                          {editingCell?.source === source && editingCell.cellKey === source
-                            ? null
-                            : displayMode === 'source' ? (
+                        ) : null}
+                        {editingCell?.source === source &&
+                        editingCell.cellKey === source
+                          ? null
+                          : displayMode === 'target'
+                            ? renderEditableTarget(target)
+                            : null}
+                        {editingCell?.source === source &&
+                        editingCell.cellKey === source ? null : displayMode ===
+                          'both' ? (
+                          <span className="glyph-pair">
                             <span
                               className={joinClassNames(
-                                settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
+                                settings.useSourceGlyphFontInOptions
+                                  ? 'source-glyph'
+                                  : undefined,
                                 target === '?' ? 'unknown-target' : undefined
                               )}
                             >
                               {source}
                             </span>
-                          ) : null}
-                          {editingCell?.source === source && editingCell.cellKey === source
-                            ? null
-                            : displayMode === 'target' ? (
-                            renderEditableTarget(target)
-                          ) : null}
-                          {editingCell?.source === source && editingCell.cellKey === source
-                            ? null
-                            : displayMode === 'both' ? (
-                            <span className="glyph-pair">
-                              <span
-                                className={joinClassNames(
-                                  settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
-                                  target === '?' ? 'unknown-target' : undefined
-                                )}
-                              >
-                                {source}
-                              </span>
-                              <span
-                                className={
-                                  target === '?' ? 'glyph-divider unknown-target' : 'glyph-divider'
-                                }
-                              >
-                                {'>'}
-                              </span>
-                              {renderEditableTarget(target)}
+                            <span
+                              className={
+                                target === '?'
+                                  ? 'glyph-divider unknown-target'
+                                  : 'glyph-divider'
+                              }
+                            >
+                              {'>'}
                             </span>
-                          ) : null}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScrollableTableWrap>
-          </>
-        ) : null}
-
-        <h3 className="subsection-title">その他の文字</h3>
-        {otherMappings.length === 0 ? (
-          <p className="caption">該当する文字はありません。</p>
-        ) : (
-          <ScrollableTableWrap className="table-wrap-compact">
-            <table className="compact-table">
-              <thead>
-                <tr>
-                  <th>変換前</th>
-                  <th>変換後</th>
-                </tr>
-              </thead>
-              <tbody>
-                {otherMappings.map(([source, target]) => (
-                  <tr key={`other-${source}`}>
-                    <td
-                      className={joinClassNames(
-                        'editable-cell',
-                        settings.useSourceGlyphFontInOptions ? 'source-glyph' : undefined,
-                        target === '?' ? 'unknown-target' : undefined
-                      )}
-                      onDoubleClick={() => startInlineEdit(source, target, `other-source-${source}`)}
-                      title="ダブルクリックで編集"
-                    >
-                      {editingCell?.source === source &&
-                      editingCell.cellKey === `other-source-${source}`
-                        ? renderCellEditor(source, `other-source-${source}`)
-                        : source}
-                    </td>
-                    <td
-                      className="editable-cell"
-                      onDoubleClick={() => startInlineEdit(source, target, `other-target-${source}`)}
-                      title="ダブルクリックで編集"
-                    >
-                      {editingCell?.source === source &&
-                      editingCell.cellKey === `other-target-${source}`
-                        ? renderCellEditor(source, `other-target-${source}`)
-                        : renderEditableTarget(target)}
-                    </td>
+                            {renderEditableTarget(target)}
+                          </span>
+                        ) : null}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
           </ScrollableTableWrap>
-        )}
+
+          {glyphSections.numberLikeRows.length > 0 ? (
+            <>
+              <ScrollableTableWrap className="table-wrap-fill table-wrap-second">
+                <table>
+                  <tbody>
+                    {glyphSections.numberLikeRows.map((row, rowIndex) => (
+                      <tr key={`glyph-number-row-${rowIndex}`}>
+                        {row.map(({ source, target }) => (
+                          <td
+                            key={source}
+                            className="glyph-cell editable-cell"
+                            onDoubleClick={() =>
+                              startInlineEdit(source, target, source)
+                            }
+                            title="ダブルクリックで編集"
+                          >
+                            {editingCell?.source === source &&
+                            editingCell.cellKey === source
+                              ? renderCellEditor(source, source)
+                              : null}
+                            {editingCell?.source === source &&
+                            editingCell.cellKey ===
+                              source ? null : displayMode === 'source' ? (
+                              <span
+                                className={joinClassNames(
+                                  settings.useSourceGlyphFontInOptions
+                                    ? 'source-glyph'
+                                    : undefined,
+                                  target === '?' ? 'unknown-target' : undefined
+                                )}
+                              >
+                                {source}
+                              </span>
+                            ) : null}
+                            {editingCell?.source === source &&
+                            editingCell.cellKey === source
+                              ? null
+                              : displayMode === 'target'
+                                ? renderEditableTarget(target)
+                                : null}
+                            {editingCell?.source === source &&
+                            editingCell.cellKey ===
+                              source ? null : displayMode === 'both' ? (
+                              <span className="glyph-pair">
+                                <span
+                                  className={joinClassNames(
+                                    settings.useSourceGlyphFontInOptions
+                                      ? 'source-glyph'
+                                      : undefined,
+                                    target === '?'
+                                      ? 'unknown-target'
+                                      : undefined
+                                  )}
+                                >
+                                  {source}
+                                </span>
+                                <span
+                                  className={
+                                    target === '?'
+                                      ? 'glyph-divider unknown-target'
+                                      : 'glyph-divider'
+                                  }
+                                >
+                                  {'>'}
+                                </span>
+                                {renderEditableTarget(target)}
+                              </span>
+                            ) : null}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </ScrollableTableWrap>
+            </>
+          ) : null}
+
+          <h3 className="subsection-title">その他の文字</h3>
+          {otherMappings.length === 0 ? (
+            <p className="caption">該当する文字はありません。</p>
+          ) : (
+            <ScrollableTableWrap className="table-wrap-compact">
+              <table className="compact-table">
+                <thead>
+                  <tr>
+                    <th>変換前</th>
+                    <th>変換後</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {otherMappings.map(([source, target]) => (
+                    <tr key={`other-${source}`}>
+                      <td
+                        className={joinClassNames(
+                          'editable-cell',
+                          settings.useSourceGlyphFontInOptions
+                            ? 'source-glyph'
+                            : undefined,
+                          target === '?' ? 'unknown-target' : undefined
+                        )}
+                        onDoubleClick={() =>
+                          startInlineEdit(
+                            source,
+                            target,
+                            `other-source-${source}`
+                          )
+                        }
+                        title="ダブルクリックで編集"
+                      >
+                        {editingCell?.source === source &&
+                        editingCell.cellKey === `other-source-${source}`
+                          ? renderCellEditor(source, `other-source-${source}`)
+                          : source}
+                      </td>
+                      <td
+                        className="editable-cell"
+                        onDoubleClick={() =>
+                          startInlineEdit(
+                            source,
+                            target,
+                            `other-target-${source}`
+                          )
+                        }
+                        title="ダブルクリックで編集"
+                      >
+                        {editingCell?.source === source &&
+                        editingCell.cellKey === `other-target-${source}`
+                          ? renderCellEditor(source, `other-target-${source}`)
+                          : renderEditableTarget(target)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollableTableWrap>
+          )}
         </section>
 
         <section className="panel">
-        <h2>権利について</h2>
-        <p className="caption">桶地下は第四境界のコンテンツです。</p>
-        <ul className="credit-list">
-          <li>
-            第四境界:{' '}
-            <a href="https://www.daiyonkyokai.net/" target="_blank" rel="noreferrer">
-              https://www.daiyonkyokai.net/
-            </a>
-          </li>
-          <li>
-            桶地下 調査の手引き:{' '}
-            <a
-              href="https://www.daiyonkyokai.net/bps/guide/78fghuvtgy7/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              https://www.daiyonkyokai.net/bps/guide/78fghuvtgy7/
-            </a>
-          </li>
-        </ul>
+          <h2>権利について</h2>
+          <p className="caption">桶地下は第四境界のコンテンツです。</p>
+          <ul className="credit-list">
+            <li>
+              第四境界:{' '}
+              <a
+                href="https://www.daiyonkyokai.net/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                https://www.daiyonkyokai.net/
+              </a>
+            </li>
+            <li>
+              桶地下 調査の手引き:{' '}
+              <a
+                href="https://www.daiyonkyokai.net/bps/guide/78fghuvtgy7/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                https://www.daiyonkyokai.net/bps/guide/78fghuvtgy7/
+              </a>
+            </li>
+          </ul>
 
-        <p className="caption">
-          この拡張機能はファンメイド作品です。第四境界とは関係がなく、権利を侵害する意図はありません。
-        </p>
+          <p className="caption">
+            この拡張機能はファンメイド作品です。第四境界とは関係がなく、権利を侵害する意図はありません。
+          </p>
 
-        <h3 className="subsection-title">この拡張機能へのコンタクト先</h3>
-        <ul className="credit-list">
-          <li>
-            X:{' '}
-            <a href="https://x.com/yaeda" target="_blank" rel="noreferrer">
-              x.com/yaeda
-            </a>
-          </li>
-          <li>
-            GitHub:{' '}
-            <a href="https://github.com/yaeda/okechika-helper" target="_blank" rel="noreferrer">
-              github.com/yaeda/okechika-helper
-            </a>
-          </li>
-        </ul>
+          <h3 className="subsection-title">この拡張機能へのコンタクト先</h3>
+          <ul className="credit-list">
+            <li>
+              X:{' '}
+              <a href="https://x.com/yaeda" target="_blank" rel="noreferrer">
+                x.com/yaeda
+              </a>
+            </li>
+            <li>
+              GitHub:{' '}
+              <a
+                href="https://github.com/yaeda/okechika-helper"
+                target="_blank"
+                rel="noreferrer"
+              >
+                github.com/yaeda/okechika-helper
+              </a>
+            </li>
+          </ul>
         </section>
       </div>
     </main>

@@ -54,7 +54,9 @@ ruby.okechika-ruby rt {
   font-size: 11px;
   line-height: 1.2;
   color: #ef4444;
-  transition: max-height 140ms ease, opacity 140ms ease;
+  transition:
+    max-height 140ms ease,
+    opacity 140ms ease;
 }
 
 #okechika-tooltip .okechika-error.is-visible {
@@ -107,6 +109,51 @@ ruby.okechika-ruby rt {
     Underground, UnknownGlyphs, 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP',
     sans-serif;
   font-size: 15px;
+}
+
+#okechika-bookmark-button {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483646;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgb(15 23 42 / 0.18);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.96);
+  color: #475569;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 0.18);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+#okechika-bookmark-button.is-hidden {
+  display: none;
+}
+
+#okechika-bookmark-button:hover {
+  transform: translateY(-1px);
+  color: #0f172a;
+  border-color: rgb(15 23 42 / 0.32);
+}
+
+#okechika-bookmark-button.is-bookmarked {
+  background: rgb(255 255 255 / 0.98);
+  color: #f59e0b;
+}
+
+#okechika-bookmark-button svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
 }
 
 #okechika-tooltip .okechika-selected-normal {
