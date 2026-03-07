@@ -709,214 +709,216 @@ export function OptionsApp() {
           </div>
         </header>
 
-        <section className="panel">
-        <div className="panel-header">
-          <h2>対象ルートURL</h2>
-          <div className="button-group">
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => setShowRootUrls((prev) => !prev)}
-            >
-              {showRootUrls ? 'URLを隠す' : 'URLを表示'}
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => {
-                void handleResetDefaultRootUrls();
-              }}
-            >
-              初期値に戻す
-            </button>
-          </div>
-        </div>
+        <div className="top-panels-grid">
+          <section className="panel">
+            <div className="panel-header">
+              <h2>対象ルートURL</h2>
+              <div className="button-group">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setShowRootUrls((prev) => !prev)}
+                >
+                  {showRootUrls ? 'URLを隠す' : 'URLを表示'}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    void handleResetDefaultRootUrls();
+                  }}
+                >
+                  初期値に戻す
+                </button>
+              </div>
+            </div>
 
-        <p className="caption">
-          対象ルートURLを追加・削除できます。追加時にブラウザ権限の許可を求めることがあります。
-        </p>
+            <p className="caption">
+              対象ルートURLを追加・削除できます。追加時にブラウザ権限の許可を求めることがあります。
+            </p>
 
-        <div className="domain-input-row">
-          <input
-            type="text"
-            value={newRootUrlInput}
-            placeholder="例: https://example.com/path/ または example.com"
-            onChange={(event) => {
-              setNewRootUrlInput(event.currentTarget.value);
-              setRootUrlError('');
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                void handleAddRootUrl();
-              }
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              void handleAddRootUrl();
-            }}
-          >
-            追加
-          </button>
-        </div>
+            <div className="domain-input-row">
+              <input
+                type="text"
+                value={newRootUrlInput}
+                placeholder="例: https://example.com/path/ または example.com"
+                onChange={(event) => {
+                  setNewRootUrlInput(event.currentTarget.value);
+                  setRootUrlError('');
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    void handleAddRootUrl();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void handleAddRootUrl();
+                }}
+              >
+                追加
+              </button>
+            </div>
 
-        {rootUrlError ? <p className="caption error">{rootUrlError}</p> : null}
+            {rootUrlError ? <p className="caption error">{rootUrlError}</p> : null}
 
-        <ul className="domain-list">
-          {settings.enabledRootUrls.length === 0 ? (
-            <li className="empty">対象ルートURLは未設定です。</li>
-          ) : (
-            settings.enabledRootUrls.map((rootUrl) => (
-              <li key={rootUrl} className="domain-item">
-                <span>{showRootUrls ? rootUrl : maskRootUrl(rootUrl)}</span>
-                <div className="domain-item-actions">
+            <ul className="domain-list">
+              {settings.enabledRootUrls.length === 0 ? (
+                <li className="empty">対象ルートURLは未設定です。</li>
+              ) : (
+                settings.enabledRootUrls.map((rootUrl) => (
+                  <li key={rootUrl} className="domain-item">
+                    <span>{showRootUrls ? rootUrl : maskRootUrl(rootUrl)}</span>
+                    <div className="domain-item-actions">
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => {
+                          handleOpenRootUrl(rootUrl);
+                        }}
+                      >
+                        開く
+                      </button>
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => {
+                          void handleRemoveRootUrl(rootUrl);
+                        }}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
+              <h2>相互変換</h2>
+            </div>
+            <p className="caption">
+              桶地下文字から日本語、日本語から桶地下文字へ変換できます。日本語→桶地下は候補から選択できます。
+            </p>
+            {converterMessage ? <p className="caption success">{converterMessage}</p> : null}
+            {converterError ? <p className="caption error">{converterError}</p> : null}
+
+            <div className="converter-tab-group">
+              <button
+                type="button"
+                className={converterTab === 'glyphToText' ? 'secondary is-active' : 'secondary'}
+                onClick={() => setConverterTab('glyphToText')}
+              >
+                桶地下 → 日本語
+              </button>
+              <button
+                type="button"
+                className={converterTab === 'textToGlyph' ? 'secondary is-active' : 'secondary'}
+                onClick={() => setConverterTab('textToGlyph')}
+              >
+                日本語 → 桶地下
+              </button>
+            </div>
+
+            <div className="converter-section">
+              {converterTab === 'glyphToText' ? (
+                <>
+                  <textarea
+                    className="converter-textarea"
+                    rows={1}
+                    value={glyphToTextInput}
+                    onChange={(event) => {
+                      setGlyphToTextInput(event.currentTarget.value);
+                      setConverterMessage('');
+                      setConverterError('');
+                    }}
+                    placeholder="桶地下文字を入力"
+                  />
+                  <div className="converter-output">{glyphToTextOutput || '（変換結果）'}</div>
                   <button
                     type="button"
                     className="secondary"
                     onClick={() => {
-                      handleOpenRootUrl(rootUrl);
+                      void handleCopyConverterResult(glyphToTextOutput, '日本語変換結果をコピーしました。');
                     }}
+                    disabled={!glyphToTextOutput}
                   >
-                    開く
+                    結果をコピー
                   </button>
+                </>
+              ) : null}
+
+              {converterTab === 'textToGlyph' ? (
+                <>
+                  <textarea
+                    className="converter-textarea"
+                    rows={1}
+                    value={textToGlyphInput}
+                    onChange={(event) => {
+                      setTextToGlyphInput(event.currentTarget.value);
+                      setConverterMessage('');
+                      setConverterError('');
+                    }}
+                    placeholder="日本語を入力"
+                  />
+                  <div className="converter-candidates">
+                    {textToGlyphSegments.length === 0 ? (
+                      <p className="caption">候補がここに表示されます。</p>
+                    ) : (
+                      textToGlyphSegments.map((segment, index) => (
+                        <div key={`segment-${index}-${segment.token}`} className="converter-segment">
+                          <span className="converter-token">{segment.token}</span>
+                          {segment.candidates.length === 0 ? (
+                            <span className="converter-no-candidate">候補なし</span>
+                          ) : (
+                            <div className="converter-choices">
+                              {segment.candidates.map((candidate) => (
+                                <button
+                                  key={`choice-${index}-${candidate}`}
+                                  type="button"
+                                  className={
+                                    textToGlyphSelected[index] === candidate
+                                      ? 'secondary is-active'
+                                      : 'secondary'
+                                  }
+                                  onClick={() => {
+                                    setTextToGlyphSelected((prev) => {
+                                      const next = [...prev];
+                                      next[index] = candidate;
+                                      return next;
+                                    });
+                                  }}
+                                >
+                                  {candidate}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="converter-output">{textToGlyphOutput || '（変換結果）'}</div>
                   <button
                     type="button"
-                    className="danger"
+                    className="secondary"
                     onClick={() => {
-                      void handleRemoveRootUrl(rootUrl);
+                      void handleCopyConverterResult(textToGlyphOutput, '桶地下文字変換結果をコピーしました。');
                     }}
+                    disabled={!textToGlyphOutput}
                   >
-                    削除
+                    結果をコピー
                   </button>
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
-        </section>
-
-        <section className="panel">
-          <div className="panel-header">
-            <h2>相互変換</h2>
-          </div>
-          <p className="caption">
-            桶地下文字から日本語、日本語から桶地下文字へ変換できます。日本語→桶地下は候補から選択できます。
-          </p>
-          {converterMessage ? <p className="caption success">{converterMessage}</p> : null}
-          {converterError ? <p className="caption error">{converterError}</p> : null}
-
-          <div className="converter-tab-group">
-            <button
-              type="button"
-              className={converterTab === 'glyphToText' ? 'secondary is-active' : 'secondary'}
-              onClick={() => setConverterTab('glyphToText')}
-            >
-              桶地下 → 日本語
-            </button>
-            <button
-              type="button"
-              className={converterTab === 'textToGlyph' ? 'secondary is-active' : 'secondary'}
-              onClick={() => setConverterTab('textToGlyph')}
-            >
-              日本語 → 桶地下
-            </button>
-          </div>
-
-          <div className="converter-section">
-            {converterTab === 'glyphToText' ? (
-              <>
-              <textarea
-                className="converter-textarea"
-                rows={1}
-                value={glyphToTextInput}
-                onChange={(event) => {
-                  setGlyphToTextInput(event.currentTarget.value);
-                  setConverterMessage('');
-                  setConverterError('');
-                }}
-                placeholder="桶地下文字を入力"
-              />
-              <div className="converter-output">{glyphToTextOutput || '（変換結果）'}</div>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  void handleCopyConverterResult(glyphToTextOutput, '日本語変換結果をコピーしました。');
-                }}
-                disabled={!glyphToTextOutput}
-              >
-                結果をコピー
-              </button>
-              </>
-            ) : null}
-
-            {converterTab === 'textToGlyph' ? (
-              <>
-              <textarea
-                className="converter-textarea"
-                rows={1}
-                value={textToGlyphInput}
-                onChange={(event) => {
-                  setTextToGlyphInput(event.currentTarget.value);
-                  setConverterMessage('');
-                  setConverterError('');
-                }}
-                placeholder="日本語を入力"
-              />
-              <div className="converter-candidates">
-                {textToGlyphSegments.length === 0 ? (
-                  <p className="caption">候補がここに表示されます。</p>
-                ) : (
-                  textToGlyphSegments.map((segment, index) => (
-                    <div key={`segment-${index}-${segment.token}`} className="converter-segment">
-                      <span className="converter-token">{segment.token}</span>
-                      {segment.candidates.length === 0 ? (
-                        <span className="converter-no-candidate">候補なし</span>
-                      ) : (
-                        <div className="converter-choices">
-                          {segment.candidates.map((candidate) => (
-                            <button
-                              key={`choice-${index}-${candidate}`}
-                              type="button"
-                              className={
-                                textToGlyphSelected[index] === candidate
-                                  ? 'secondary is-active'
-                                  : 'secondary'
-                              }
-                              onClick={() => {
-                                setTextToGlyphSelected((prev) => {
-                                  const next = [...prev];
-                                  next[index] = candidate;
-                                  return next;
-                                });
-                              }}
-                            >
-                              {candidate}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="converter-output">{textToGlyphOutput || '（変換結果）'}</div>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  void handleCopyConverterResult(textToGlyphOutput, '桶地下文字変換結果をコピーしました。');
-                }}
-                disabled={!textToGlyphOutput}
-              >
-                結果をコピー
-              </button>
-              </>
-            ) : null}
-          </div>
-        </section>
+                </>
+              ) : null}
+            </div>
+          </section>
+        </div>
 
         <section className="panel">
         <div className="panel-header">
@@ -996,7 +998,7 @@ export function OptionsApp() {
           </div>
         </div>
 
-        <ScrollableTableWrap>
+        <ScrollableTableWrap className="table-wrap-fill">
           <table>
             <tbody>
               {glyphSections.baseRows.map((row, rowIndex) => (
@@ -1060,7 +1062,7 @@ export function OptionsApp() {
 
         {glyphSections.numberLikeRows.length > 0 ? (
           <>
-            <ScrollableTableWrap className="table-wrap-second">
+            <ScrollableTableWrap className="table-wrap-fill table-wrap-second">
               <table>
                 <tbody>
                   {glyphSections.numberLikeRows.map((row, rowIndex) => (

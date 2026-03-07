@@ -43,8 +43,7 @@ body {
 }
 
 .content-column {
-  width: fit-content;
-  max-width: 100%;
+  width: min(1200px, 100%);
   min-width: 0;
   margin-inline: auto;
   display: grid;
@@ -53,6 +52,7 @@ body {
 
 .content-column > * {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -149,6 +149,20 @@ body {
   border-radius: 16px;
   padding: 16px;
   min-width: 0;
+}
+
+.top-panels-grid {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 800px) {
+  .top-panels-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
 }
 
 .panel h2 {
@@ -395,6 +409,14 @@ button:hover {
 
 .table-wrap-second {
   margin-top: 10px;
+}
+
+.table-wrap-fill {
+  width: 100%;
+}
+
+.table-wrap-fill table {
+  min-width: 100%;
 }
 
 table {
