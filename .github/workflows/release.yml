@@ -41,7 +41,8 @@ jobs:
       - name: Read bumped version
         id: version
         run: |
-          echo "next_version=$(node -p 'require(\"./package.json\").version')" >> "$GITHUB_OUTPUT"
+          version=$(node -p "require('./package.json').version")
+          echo "next_version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Build and create Chrome zip
         run: npm run zip
