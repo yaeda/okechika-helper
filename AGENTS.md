@@ -46,7 +46,16 @@ This document is a guide for agents and contributors working in this repository.
 - Follow Conventional Commits
 - Format: `<type>(<scope>): <subject>`
 
-## 7. Maintenance
+## 7. Pre-commit Checklist
+
+- Review the diff and remove dead code or temporary trial-and-error changes before committing
+- If behavior or UX changed, update `docs/SPEC.md` in the same change
+- Run `npm run format:check`
+- Run `npm run lint`
+- Run `npm run build`
+- Confirm the worktree only contains files intended for the commit
+
+## 8. Maintenance
 
 - Keep dependencies reasonably up to date
 - Revisit and update this document as project conventions evolve
