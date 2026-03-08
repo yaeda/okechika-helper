@@ -17,9 +17,12 @@ export const DEFAULT_ROOT_URLS = [
   'https://www.qtes9gu0k.xyz/'
 ];
 
+export const OKCK_HOST = 'qtes9gu0k.xyz';
+
 export const DEFAULT_SETTINGS: ExtensionSettings = {
   enabledRootUrls: DEFAULT_ROOT_URLS,
-  useSourceGlyphFontInOptions: true
+  useSourceGlyphFontInOptions: true,
+  enableOkck24HourMode: false
 };
 
 export const DEFAULT_TABLE: DecodeTable = {
@@ -56,6 +59,8 @@ export async function getState(): Promise<ExtensionState> {
   const useSourceGlyphFontInOptions =
     rawSettings?.useSourceGlyphFontInOptions ??
     DEFAULT_SETTINGS.useSourceGlyphFontInOptions;
+  const enableOkck24HourMode =
+    rawSettings?.enableOkck24HourMode ?? DEFAULT_SETTINGS.enableOkck24HourMode;
   const nextRootUrls = (
     storedRootUrls.length > 0 ? storedRootUrls : legacyDomains
   ).map((value) => {
@@ -73,7 +78,8 @@ export async function getState(): Promise<ExtensionState> {
     settings: {
       enabledRootUrls:
         nextRootUrls.length > 0 ? nextRootUrls : DEFAULT_ROOT_URLS,
-      useSourceGlyphFontInOptions
+      useSourceGlyphFontInOptions,
+      enableOkck24HourMode
     },
     bookmarks
   };
@@ -83,7 +89,8 @@ export async function setSettings(settings: ExtensionSettings): Promise<void> {
   await getSyncStorage().set({
     [STORAGE_KEYS.settings]: {
       enabledRootUrls: settings.enabledRootUrls.map(normalizeRootUrl),
-      useSourceGlyphFontInOptions: settings.useSourceGlyphFontInOptions
+      useSourceGlyphFontInOptions: settings.useSourceGlyphFontInOptions,
+      enableOkck24HourMode: settings.enableOkck24HourMode
     } satisfies ExtensionSettings
   });
 }
@@ -174,6 +181,10 @@ export function resolveMatchedRootUrl(
 
 export function normalizeHost(host: string): string {
   return host.trim().toLowerCase().replace(/\.$/, '');
+}
+
+export function isOkckHost(host: string): boolean {
+  return isSameHostOrWwwPair(normalizeHost(host), OKCK_HOST);
 }
 
 function isSameHostOrWwwPair(host: string, domain: string): boolean {

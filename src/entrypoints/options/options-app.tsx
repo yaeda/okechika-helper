@@ -595,6 +595,17 @@ export function OptionsApp() {
     });
   }
 
+  async function handleToggleOkck24HourMode(checked: boolean): Promise<void> {
+    if (!settings) {
+      return;
+    }
+
+    await saveSettings({
+      ...settings,
+      enableOkck24HourMode: checked
+    });
+  }
+
   async function handleAddRootUrl(): Promise<void> {
     if (!settings) {
       return;
@@ -951,6 +962,24 @@ export function OptionsApp() {
                 ))
               )}
             </ul>
+
+            <label className="subtle-setting-card">
+              <span className="source-font-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.enableOkck24HourMode}
+                  onChange={(event) => {
+                    void handleToggleOkck24HourMode(
+                      event.currentTarget.checked
+                    );
+                  }}
+                />
+                <span>桶地下サイトを24時間モードにする</span>
+              </span>
+              <p className="caption">
+                設定を反映するためにページを開き直して下さい
+              </p>
+            </label>
           </section>
 
           <section className="panel">

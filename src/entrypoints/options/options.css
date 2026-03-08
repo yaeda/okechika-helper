@@ -241,6 +241,33 @@ body {
   overflow-wrap: anywhere;
 }
 
+.subtle-setting-card {
+  display: block;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8f3ee;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.subtle-setting-card:hover {
+  border-color: #cdb9ab;
+  background: #f5ede6;
+}
+
+.subtle-setting-card:active {
+  transform: translateY(1px);
+}
+
+.subtle-setting-card .caption {
+  margin: 6px 0 0;
+}
+
 .display-mode-group {
   display: inline-flex;
   justify-content: center;
