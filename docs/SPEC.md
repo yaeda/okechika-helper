@@ -131,3 +131,5 @@
 
 - `iframe`（特に `srcdoc` / `about:blank`）内での動作確認は、`build` 版の拡張を推奨する
 - lint 実行時は生成物ディレクトリ（`.output/`, `.wxt/`）を対象外とする
+- format 実行時は生成物ディレクトリ（`.output/`, `.wxt/`）と `node_modules/` を対象外とする
+- Pull Request では GitHub Actions により `build` / `lint` / `format:check` を自動実行し、失敗時はマージ不可とする

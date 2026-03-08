@@ -31,6 +31,7 @@ This document is a guide for agents and contributors working in this repository.
 - Formatting output is authoritative
 - Tailwind class ordering should be handled by formatter tooling once configured
 - Commits or merges with lint/format violations are not allowed after tooling is enabled in CI/scripts
+- Pull Requests are validated by GitHub Actions running `build`, `lint`, and `format:check`
 - If lint/format/test tooling is introduced or changed, update this file and `docs/SPEC.md` as needed
 
 ## 5. Development Flow
