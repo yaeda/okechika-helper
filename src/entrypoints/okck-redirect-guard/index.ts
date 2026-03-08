@@ -8,11 +8,7 @@ function isBlockedRedirectListener(
         ? listener.handleEvent.toString()
         : '';
 
-  return (
-    source.includes('v1f1sddquqg') &&
-    source.includes('x3qn36m3xspyrmz') &&
-    source.includes('/kr3s7/')
-  );
+  return source.includes('kr3s7');
 }
 
 export default defineContentScript({
