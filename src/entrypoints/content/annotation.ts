@@ -1,5 +1,8 @@
 import type { DecodeMap } from '@/lib/types';
-import { isTranslatableGlyphChar, isUnknownGlyphElement } from '@/entrypoints/content/glyph';
+import {
+  isTranslatableGlyphChar,
+  isUnknownGlyphElement
+} from '@/entrypoints/content/glyph';
 
 const ANNOTATION_ATTR = 'data-okechika-annotated';
 const ORIGINAL_TEXT_ATTR = 'data-okechika-original';
@@ -36,7 +39,16 @@ export function createAnnotationController(): AnnotationController {
 
     const tagName = parent.tagName.toLowerCase();
     if (
-      ['script', 'style', 'textarea', 'input', 'option', 'ruby', 'rt', 'rb'].includes(tagName)
+      [
+        'script',
+        'style',
+        'textarea',
+        'input',
+        'option',
+        'ruby',
+        'rt',
+        'rb'
+      ].includes(tagName)
     ) {
       return false;
     }
@@ -79,10 +91,17 @@ export function createAnnotationController(): AnnotationController {
   }
 
   function annotateDocument(): void {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT
+    );
     const targets: Text[] = [];
 
-    for (let current = walker.nextNode(); current; current = walker.nextNode()) {
+    for (
+      let current = walker.nextNode();
+      current;
+      current = walker.nextNode()
+    ) {
       const textNode = current as Text;
       if (isTextNodeTarget(textNode)) {
         targets.push(textNode);
@@ -113,7 +132,9 @@ export function createAnnotationController(): AnnotationController {
   }
 
   function clearAnnotations(): void {
-    const wrappers = document.querySelectorAll<HTMLElement>(`span[${ANNOTATION_ATTR}="true"]`);
+    const wrappers = document.querySelectorAll<HTMLElement>(
+      `span[${ANNOTATION_ATTR}="true"]`
+    );
     for (const wrapper of wrappers) {
       const original = wrapper.getAttribute(ORIGINAL_TEXT_ATTR) ?? '';
       wrapper.replaceWith(document.createTextNode(original));

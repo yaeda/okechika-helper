@@ -5,7 +5,10 @@ import {
 import { DEFAULT_SETTINGS, DEFAULT_TABLE, getState } from '@/lib/storage';
 
 const CONTENT_SCRIPT_ID = 'okechika-content-runtime';
-const CONTENT_SCRIPT_REGISTRATION: Omit<chrome.scripting.RegisteredContentScript, 'id' | 'matches'> = {
+const CONTENT_SCRIPT_REGISTRATION: Omit<
+  chrome.scripting.RegisteredContentScript,
+  'id' | 'matches'
+> = {
   js: ['content-scripts/content.js'],
   css: ['content-scripts/content.css'],
   allFrames: true,
@@ -37,7 +40,9 @@ async function syncRuntimeContentScript(): Promise<void> {
   const matches = Array.from(new Set(allowedMatches.flat()));
 
   if (matches.length === 0) {
-    await chrome.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] }).catch(() => {});
+    await chrome.scripting
+      .unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] })
+      .catch(() => {});
     return;
   }
 
@@ -72,7 +77,9 @@ let syncChain: Promise<void> = Promise.resolve();
 function queueSyncRuntimeContentScript(): void {
   syncChain = syncChain
     .then(() => syncRuntimeContentScript())
-    .catch((error) => console.error('Failed to sync content script registration', error));
+    .catch((error) =>
+      console.error('Failed to sync content script registration', error)
+    );
 }
 
 export default defineBackground(() => {

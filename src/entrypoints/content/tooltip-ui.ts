@@ -159,10 +159,13 @@ export function createTooltipUi(
             },
             onSubmit: () => {
               void (async () => {
-                const sourceChars = filterTranslatableGlyphChars(state.selectedText);
+                const sourceChars = filterTranslatableGlyphChars(
+                  state.selectedText
+                );
                 const targetChars = Array.from(state.inputValue);
                 const selectedSingleNumberChar =
-                  sourceChars.length === 1 && OKECHIKA_NUMBER_CHARS.includes(sourceChars[0] ?? '');
+                  sourceChars.length === 1 &&
+                  OKECHIKA_NUMBER_CHARS.includes(sourceChars[0] ?? '');
 
                 if (sourceChars.length === 0) {
                   state = {
@@ -176,7 +179,10 @@ export function createTooltipUi(
                   return;
                 }
 
-                if (!selectedSingleNumberChar && targetChars.length !== sourceChars.length) {
+                if (
+                  !selectedSingleNumberChar &&
+                  targetChars.length !== sourceChars.length
+                ) {
                   state = {
                     ...state,
                     error: '入力文字数は選択文字数と同じにしてください'

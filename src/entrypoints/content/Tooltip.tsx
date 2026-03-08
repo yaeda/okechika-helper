@@ -47,13 +47,25 @@ export function Tooltip(props: TooltipProps) {
       </div>
 
       <div className="okechika-actions">
-        <button type="button" className="okechika-search" onClick={props.onSearch}>
+        <button
+          type="button"
+          className="okechika-search"
+          onClick={props.onSearch}
+        >
           検索
         </button>
-        <button type="button" className="okechika-copy" onClick={props.onCopySelected}>
+        <button
+          type="button"
+          className="okechika-copy"
+          onClick={props.onCopySelected}
+        >
           コピー
         </button>
-        <button type="button" className="okechika-copy-jp" onClick={props.onCopyDecoded}>
+        <button
+          type="button"
+          className="okechika-copy-jp"
+          onClick={props.onCopyDecoded}
+        >
           🇯🇵コピー
         </button>
       </div>
@@ -74,7 +86,9 @@ export function Tooltip(props: TooltipProps) {
           />
           <button type="submit">Save</button>
         </div>
-        <div className={`okechika-error${state.error ? ' is-visible' : ''}`}>{state.error}</div>
+        <div className={`okechika-error${state.error ? ' is-visible' : ''}`}>
+          {state.error}
+        </div>
       </form>
     </div>
   );

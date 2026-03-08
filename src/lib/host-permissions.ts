@@ -1,7 +1,11 @@
 import { normalizeHost, normalizeRootUrl } from '@/lib/storage';
 
 function isIpOrLocalHost(host: string): boolean {
-  return host === 'localhost' || host.includes(':') || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
+  return (
+    host === 'localhost' ||
+    host.includes(':') ||
+    /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)
+  );
 }
 
 function toHostCandidates(host: string): string[] {
@@ -29,12 +33,16 @@ export function getPermissionOriginsForRootUrl(rootUrl: string): string[] {
   return Array.from(new Set(hosts.map((host) => `${protocol}//${host}/*`)));
 }
 
-export async function requestRootUrlPermission(rootUrl: string): Promise<boolean> {
+export async function requestRootUrlPermission(
+  rootUrl: string
+): Promise<boolean> {
   const origins = getPermissionOriginsForRootUrl(rootUrl);
   return chrome.permissions.request({ origins });
 }
 
-async function getPermittedHostsForRootUrl(rootUrl: string): Promise<Array<{ protocol: string; host: string }>> {
+async function getPermittedHostsForRootUrl(
+  rootUrl: string
+): Promise<Array<{ protocol: string; host: string }>> {
   const normalized = toNormalizedRoot(rootUrl);
   const protocol = normalized.protocol;
   const hosts = toHostCandidates(normalizeHost(normalized.hostname));
@@ -57,7 +65,9 @@ export async function hasRootUrlPermission(rootUrl: string): Promise<boolean> {
   return permittedHosts.length > 0;
 }
 
-export async function getContentScriptMatchesForPermittedOrigins(rootUrl: string): Promise<string[]> {
+export async function getContentScriptMatchesForPermittedOrigins(
+  rootUrl: string
+): Promise<string[]> {
   const permittedHosts = await getPermittedHostsForRootUrl(rootUrl);
 
   return Array.from(

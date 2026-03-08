@@ -1398,9 +1398,8 @@ export const OKECHIKA_TEXT_CHARS: string[] = [
   '却',
   '卵',
   '卶',
-  '卷',
+  '卷'
 ];
-
 
 export const OKECHIKA_NUMBER_CHARS: string[] = [
   'ァ',
@@ -1472,8 +1471,10 @@ export const OKECHIKA_NUMBER_CHARS: string[] = [
   'ャ',
   'ヤ',
   'ュ',
-  'ユ',
+  'ユ'
 ];
 
-
-export const OKECHIKA_CHARS: string[] = [...OKECHIKA_TEXT_CHARS, ...OKECHIKA_NUMBER_CHARS];
+export const OKECHIKA_CHARS: string[] = [
+  ...OKECHIKA_TEXT_CHARS,
+  ...OKECHIKA_NUMBER_CHARS
+];
