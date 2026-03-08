@@ -974,10 +974,13 @@ export function OptionsApp() {
                     );
                   }}
                 />
-                <span>桶地下サイトを24時間モードにする</span>
+                <span>桶地下サイトを24時間営業にする</span>
               </span>
               <p className="caption">
-                設定を反映するためにページを開き直して下さい
+                この設定を変更した場合はページをリロードするか開き直して下さい。
+              </p>
+              <p className="caption">
+                この設定は世界観を損なうおそれがあります。ご利用の際はあらかじめご了承ください。
               </p>
             </label>
           </section>
