@@ -3,7 +3,6 @@ import { createRoot, type Root } from 'react-dom/client';
 import { createIntegratedUi } from 'wxt/utils/content-script-ui/integrated';
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 
-import { OKECHIKA_NUMBER_CHARS } from '@/lib/okechika-chars';
 import type { DecodeMap } from '@/lib/types';
 import { filterTranslatableGlyphChars } from '@/entrypoints/content/glyph';
 import { Tooltip, type TooltipState } from '@/entrypoints/content/Tooltip';
@@ -49,6 +48,34 @@ function navigateToSearchPage(rootUrl: string, query: string): void {
   }
 
   window.location.href = destination;
+}
+
+function createDecodeEntries(
+  sourceChars: string[],
+  inputValue: string
+): DecodeMap {
+  if (sourceChars.length === 0) {
+    return {};
+  }
+
+  if (sourceChars.length === 1) {
+    const [source] = sourceChars;
+    return source && inputValue.length > 0 ? { [source]: inputValue } : {};
+  }
+
+  const targetChars = Array.from(inputValue);
+  if (targetChars.length !== sourceChars.length) {
+    return {};
+  }
+
+  return sourceChars.reduce<DecodeMap>((entries, source, index) => {
+    const target = targetChars[index];
+    if (target) {
+      entries[source] = target;
+    }
+
+    return entries;
+  }, {});
 }
 
 export function createTooltipUi(
@@ -162,10 +189,6 @@ export function createTooltipUi(
                 const sourceChars = filterTranslatableGlyphChars(
                   state.selectedText
                 );
-                const targetChars = Array.from(state.inputValue);
-                const selectedSingleNumberChar =
-                  sourceChars.length === 1 &&
-                  OKECHIKA_NUMBER_CHARS.includes(sourceChars[0] ?? '');
 
                 if (sourceChars.length === 0) {
                   state = {
@@ -180,8 +203,8 @@ export function createTooltipUi(
                 }
 
                 if (
-                  !selectedSingleNumberChar &&
-                  targetChars.length !== sourceChars.length
+                  sourceChars.length > 1 &&
+                  Array.from(state.inputValue).length !== sourceChars.length
                 ) {
                   state = {
                     ...state,
@@ -191,20 +214,10 @@ export function createTooltipUi(
                   return;
                 }
 
-                const entries: DecodeMap = {};
-                if (selectedSingleNumberChar) {
-                  const source = sourceChars[0];
-                  if (source && targetChars.length > 0) {
-                    entries[source] = state.inputValue;
-                  }
-                } else {
-                  targetChars.forEach((target, index) => {
-                    const source = sourceChars[index];
-                    if (source) {
-                      entries[source] = target;
-                    }
-                  });
-                }
+                const entries = createDecodeEntries(
+                  sourceChars,
+                  state.inputValue
+                );
 
                 if (Object.keys(entries).length === 0) {
                   state = {
