@@ -57,6 +57,12 @@ async function downloadCsv(mappings: DecodeMap): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+function getOfficialSearchUrl(query: string): string {
+  const destinationUrl = new URL('https://www.qtes9gu0k.xyz/');
+  destinationUrl.searchParams.set('s', query);
+  return destinationUrl.toString();
+}
+
 function parseMappingsCsv(csvText: string): DecodeMap {
   const rows = parseCsvRows(csvText);
   if (rows.length === 0) {
@@ -652,6 +658,10 @@ export function OptionsApp() {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
+  function handleSearchOfficialSite(query: string): void {
+    window.open(getOfficialSearchUrl(query), '_blank', 'noopener,noreferrer');
+  }
+
   async function handleResetDefaultRootUrls(): Promise<void> {
     setRootUrlError('');
     setNewRootUrlInput('');
@@ -1117,19 +1127,31 @@ export function OptionsApp() {
                   <div className="converter-output">
                     {textToGlyphOutput || '（変換結果）'}
                   </div>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => {
-                      void handleCopyConverterResult(
-                        textToGlyphOutput,
-                        '桶地下文字変換結果をコピーしました。'
-                      );
-                    }}
-                    disabled={!textToGlyphOutput}
-                  >
-                    結果をコピー
-                  </button>
+                  <div className="converter-actions">
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => {
+                        void handleCopyConverterResult(
+                          textToGlyphOutput,
+                          '桶地下文字変換結果をコピーしました。'
+                        );
+                      }}
+                      disabled={!textToGlyphOutput}
+                    >
+                      結果をコピー
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => {
+                        handleSearchOfficialSite(textToGlyphOutput);
+                      }}
+                      disabled={!textToGlyphOutput}
+                    >
+                      公式サイトで検索
+                    </button>
+                  </div>
                 </>
               ) : null}
             </div>
