@@ -1,0 +1,188 @@
+:root {
+  color-scheme: light;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI',
+    sans-serif;
+  line-height: 1.4;
+  color: #1f2937;
+  background: radial-gradient(
+    circle at top,
+    #fff1cf,
+    #fff9ea 42%,
+    #f7f1df 100%
+  );
+}
+
+body {
+  margin: 0;
+  min-width: 360px;
+  background: transparent;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.popup-shell {
+  display: flex;
+  max-height: 560px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.popup-settings-link {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #d6c9a6;
+  border-radius: 14px;
+  background: rgba(255, 252, 244, 0.92);
+  padding: 12px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.popup-settings-link:hover {
+  background: #fffdf7;
+}
+
+.popup-chevron {
+  font-size: 20px;
+  line-height: 1;
+  color: #7c5f19;
+}
+
+.popup-section {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e2d6b8;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 30px rgba(109, 91, 44, 0.08);
+}
+
+.popup-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #efe5cb;
+}
+
+.popup-section-header h1 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.popup-section-header span {
+  color: #7b7280;
+  font-size: 12px;
+}
+
+.popup-empty {
+  margin: 0;
+  padding: 16px 14px 18px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.popup-bookmark-list {
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.popup-bookmark-list li + li {
+  margin-top: 8px;
+}
+
+.popup-bookmark-item {
+  display: flex;
+  gap: 10px;
+  border: 1px solid #eadfcb;
+  border-radius: 14px;
+  background: #fffdfa;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.popup-bookmark-item:hover,
+.popup-bookmark-item:focus-visible {
+  outline: none;
+  border-color: #b9933a;
+  box-shadow: 0 0 0 3px rgba(185, 147, 58, 0.18);
+}
+
+.popup-bookmark-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.popup-bookmark-title,
+.popup-bookmark-decoded,
+.popup-bookmark-url {
+  margin: 0;
+}
+
+.popup-bookmark-title {
+  font-size: 13px;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.popup-bookmark-decoded,
+.popup-bookmark-url {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.popup-bookmark-decoded {
+  color: #815f11;
+}
+
+.popup-bookmark-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.popup-action-button {
+  border: 1px solid #d6c9a6;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+  color: #3f3a2f;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.popup-action-button:hover {
+  background: #fffbef;
+}
+
+.popup-action-button.danger {
+  border-color: #e6c0b7;
+  color: #a3392d;
+}
+
+.popup-action-button.danger:hover {
+  background: #fff5f3;
+}

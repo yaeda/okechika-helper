@@ -7,7 +7,8 @@ export default defineConfig({
     name: '桶地下 Helper',
     description: '桶地下文字の解読作業を支援するためのブラウザ拡張です。',
     action: {
-      default_title: '桶地下 Helper 設定を開く'
+      default_title: '桶地下 Helper',
+      default_popup: 'popup.html'
     },
     permissions: ['storage', 'scripting'],
     host_permissions: [
