@@ -14,6 +14,7 @@ export interface DecodeTable {
 export interface ExtensionSettings {
   enabledRootUrls: string[];
   useSourceGlyphFontInOptions: boolean;
+  enableOkck24HourMode: boolean;
 }
 
 export interface ExtensionState {
