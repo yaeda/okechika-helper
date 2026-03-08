@@ -969,12 +969,16 @@ export function OptionsApp() {
                   type="checkbox"
                   checked={settings.enableOkck24HourMode}
                   onChange={(event) => {
-                    void handleToggleOkck24HourMode(event.currentTarget.checked);
+                    void handleToggleOkck24HourMode(
+                      event.currentTarget.checked
+                    );
                   }}
                 />
                 <span>桶地下サイトを24時間モードにする</span>
               </span>
-              <p className="caption">設定を反映するためにページを開き直して下さい</p>
+              <p className="caption">
+                設定を反映するためにページを開き直して下さい
+              </p>
             </label>
           </section>
 
