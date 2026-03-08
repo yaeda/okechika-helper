@@ -1,6 +1,23 @@
 # Changelog
 
 
+## v1.3.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.2.0...v1.3.0)
+
+### 🚀 Enhancements
+
+- **options:** Update okck 24-hour mode copy ([1cc4c37](https://github.com/yaeda/okechika-helper/commit/1cc4c37))
+- **popup:** Show bookmarks in extension popup ([28190cb](https://github.com/yaeda/okechika-helper/commit/28190cb))
+
+### 💅 Refactors
+
+- **okck:** Simplify redirect guard matching ([ced9254](https://github.com/yaeda/okechika-helper/commit/ced9254))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.2.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.1.0...v1.2.0)
