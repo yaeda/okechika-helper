@@ -1,6 +1,19 @@
 # Changelog
 
 
+## v1.4.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.3.0...v1.4.0)
+
+### 🚀 Enhancements
+
+- **options:** Add official site search button ([a87c801](https://github.com/yaeda/okechika-helper/commit/a87c801))
+- **content:** Generalize single-glyph mappings ([60adcc7](https://github.com/yaeda/okechika-helper/commit/60adcc7))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda <t.yaeda@gmail.com>
+
 ## v1.3.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.2.0...v1.3.0)
