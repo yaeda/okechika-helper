@@ -701,6 +701,12 @@ thead th {
   overflow-wrap: anywhere;
 }
 
+.converter-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .converter-candidates {
   margin: 8px 0;
   padding: 8px;
