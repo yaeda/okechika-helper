@@ -3,13 +3,15 @@ import type {
   DecodeMap,
   DecodeTable,
   ExtensionSettings,
-  ExtensionState
+  ExtensionState,
+  OptionsUiState
 } from '@/lib/types';
 
 const STORAGE_KEYS = {
   table: 'decodeTable',
   settings: 'settings',
-  bookmarks: 'bookmarks'
+  bookmarks: 'bookmarks',
+  optionsUiState: 'optionsUiState'
 } as const;
 
 export const DEFAULT_ROOT_URLS = [
@@ -31,12 +33,22 @@ export const DEFAULT_TABLE: DecodeTable = {
   updatedAt: null
 };
 
+export const DEFAULT_OPTIONS_UI_STATE: OptionsUiState = {
+  showRootUrls: false,
+  converterTab: 'textToGlyph',
+  tableDisplayMode: 'both'
+};
+
 function nowIso(): string {
   return new Date().toISOString();
 }
 
 function getSyncStorage(): chrome.storage.StorageArea {
   return chrome.storage.sync;
+}
+
+function getLocalStorage(): chrome.storage.StorageArea {
+  return chrome.storage.local;
 }
 
 export async function getState(): Promise<ExtensionState> {
@@ -88,6 +100,37 @@ export async function getState(): Promise<ExtensionState> {
     },
     bookmarks
   };
+}
+
+export async function getOptionsUiState(): Promise<OptionsUiState> {
+  const result = await getLocalStorage().get(STORAGE_KEYS.optionsUiState);
+  const rawUiState = result[STORAGE_KEYS.optionsUiState] as
+    | Partial<OptionsUiState>
+    | undefined;
+
+  return {
+    showRootUrls:
+      rawUiState?.showRootUrls ?? DEFAULT_OPTIONS_UI_STATE.showRootUrls,
+    converterTab:
+      rawUiState?.converterTab === 'glyphToText' ||
+      rawUiState?.converterTab === 'textToGlyph'
+        ? rawUiState.converterTab
+        : DEFAULT_OPTIONS_UI_STATE.converterTab,
+    tableDisplayMode:
+      rawUiState?.tableDisplayMode === 'source' ||
+      rawUiState?.tableDisplayMode === 'target' ||
+      rawUiState?.tableDisplayMode === 'both'
+        ? rawUiState.tableDisplayMode
+        : DEFAULT_OPTIONS_UI_STATE.tableDisplayMode
+  };
+}
+
+export async function setOptionsUiState(
+  uiState: OptionsUiState
+): Promise<void> {
+  await getLocalStorage().set({
+    [STORAGE_KEYS.optionsUiState]: uiState satisfies OptionsUiState
+  });
 }
 
 export async function setSettings(settings: ExtensionSettings): Promise<void> {

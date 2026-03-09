@@ -7,13 +7,16 @@ import {
   decodeTextWithMappings
 } from '@/lib/conversion';
 import {
+  DEFAULT_OPTIONS_UI_STATE,
   DEFAULT_SETTINGS,
   DEFAULT_ROOT_URLS,
   getState,
+  getOptionsUiState,
   normalizeRootUrl,
   removeBookmark,
   resolveMatchedRootUrl,
   setMappings,
+  setOptionsUiState,
   setSettings,
   toCsv
 } from '@/lib/storage';
@@ -27,7 +30,10 @@ import type {
   BookmarkEntry,
   DecodeMap,
   DecodeTable,
-  ExtensionSettings
+  ExtensionSettings,
+  OptionsConverterTab,
+  OptionsTableDisplayMode,
+  OptionsUiState
 } from '@/lib/types';
 
 async function hashText(input: string): Promise<string> {
@@ -313,10 +319,12 @@ function ScrollableTableWrap({
 
 export function OptionsApp() {
   const extensionVersion = chrome.runtime.getManifest().version;
-  const [displayMode, setDisplayMode] = useState<'source' | 'target' | 'both'>(
-    'both'
+  const [displayMode, setDisplayMode] = useState<OptionsTableDisplayMode>(
+    DEFAULT_OPTIONS_UI_STATE.tableDisplayMode
   );
-  const [showRootUrls, setShowRootUrls] = useState(false);
+  const [showRootUrls, setShowRootUrls] = useState(
+    DEFAULT_OPTIONS_UI_STATE.showRootUrls
+  );
   const [settings, setLocalSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
   const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>([]);
@@ -336,21 +344,37 @@ export function OptionsApp() {
   const [textToGlyphSelected, setTextToGlyphSelected] = useState<string[]>([]);
   const [converterMessage, setConverterMessage] = useState('');
   const [converterError, setConverterError] = useState('');
-  const [converterTab, setConverterTab] = useState<
-    'glyphToText' | 'textToGlyph'
-  >('glyphToText');
+  const [converterTab, setConverterTab] = useState<OptionsConverterTab>(
+    DEFAULT_OPTIONS_UI_STATE.converterTab
+  );
   const [collapsedBookmarkGroups, setCollapsedBookmarkGroups] = useState<
     Record<string, boolean>
   >({});
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const skipBlurCommitRef = useRef(false);
 
+  function applyOptionsUiState(nextUiState: OptionsUiState): void {
+    setShowRootUrls(nextUiState.showRootUrls);
+    setConverterTab(nextUiState.converterTab);
+    setDisplayMode(nextUiState.tableDisplayMode);
+  }
+
+  async function saveOptionsPanelState(
+    nextUiState: OptionsUiState
+  ): Promise<void> {
+    await setOptionsUiState(nextUiState);
+  }
+
   useEffect(() => {
     async function load(): Promise<void> {
-      const state = await getState();
+      const [state, uiState] = await Promise.all([
+        getState(),
+        getOptionsUiState()
+      ]);
       setLocalSettings(state.settings);
       setTable(state.table);
       setBookmarks(state.bookmarks);
+      applyOptionsUiState(uiState);
       setLoading(false);
     }
 
@@ -359,11 +383,11 @@ export function OptionsApp() {
     const handler: Parameters<
       typeof chrome.storage.onChanged.addListener
     >[0] = (changes, areaName) => {
-      if (areaName !== 'sync') {
-        return;
-      }
-
-      if (changes.decodeTable || changes.settings || changes.bookmarks) {
+      if (
+        (areaName === 'sync' &&
+          (changes.decodeTable || changes.settings || changes.bookmarks)) ||
+        (areaName === 'local' && changes.optionsUiState)
+      ) {
         void load();
       }
     };
@@ -567,6 +591,12 @@ export function OptionsApp() {
     [textToGlyphSegments, textToGlyphSelected]
   );
 
+  const optionsUiState: OptionsUiState = {
+    showRootUrls,
+    converterTab,
+    tableDisplayMode: displayMode
+  };
+
   async function saveSettings(nextSettings: ExtensionSettings): Promise<void> {
     if (!settings) {
       return;
@@ -669,6 +699,31 @@ export function OptionsApp() {
 
   function handleOpenBookmark(url: string): void {
     window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function handleToggleShowRootUrls(): void {
+    const nextShowRootUrls = !showRootUrls;
+    setShowRootUrls(nextShowRootUrls);
+    void saveOptionsPanelState({
+      ...optionsUiState,
+      showRootUrls: nextShowRootUrls
+    });
+  }
+
+  function handleSelectConverterTab(nextTab: OptionsConverterTab): void {
+    setConverterTab(nextTab);
+    void saveOptionsPanelState({
+      ...optionsUiState,
+      converterTab: nextTab
+    });
+  }
+
+  function handleSelectDisplayMode(nextMode: OptionsTableDisplayMode): void {
+    setDisplayMode(nextMode);
+    void saveOptionsPanelState({
+      ...optionsUiState,
+      tableDisplayMode: nextMode
+    });
   }
 
   function handleSearchOfficialSite(query: string): void {
@@ -898,7 +953,7 @@ export function OptionsApp() {
                 <button
                   type="button"
                   className="secondary"
-                  onClick={() => setShowRootUrls((prev) => !prev)}
+                  onClick={handleToggleShowRootUrls}
                 >
                   {showRootUrls ? 'URLを隠す' : 'URLを表示'}
                 </button>
@@ -1051,24 +1106,24 @@ export function OptionsApp() {
               <button
                 type="button"
                 className={
-                  converterTab === 'glyphToText'
-                    ? 'secondary is-active'
-                    : 'secondary'
-                }
-                onClick={() => setConverterTab('glyphToText')}
-              >
-                桶地下 → 日本語
-              </button>
-              <button
-                type="button"
-                className={
                   converterTab === 'textToGlyph'
                     ? 'secondary is-active'
                     : 'secondary'
                 }
-                onClick={() => setConverterTab('textToGlyph')}
+                onClick={() => handleSelectConverterTab('textToGlyph')}
               >
                 日本語 → 桶地下
+              </button>
+              <button
+                type="button"
+                className={
+                  converterTab === 'glyphToText'
+                    ? 'secondary is-active'
+                    : 'secondary'
+                }
+                onClick={() => handleSelectConverterTab('glyphToText')}
+              >
+                桶地下 → 日本語
               </button>
             </div>
 
@@ -1363,7 +1418,7 @@ export function OptionsApp() {
                       ? 'secondary is-active'
                       : 'secondary'
                   }
-                  onClick={() => setDisplayMode('source')}
+                  onClick={() => handleSelectDisplayMode('source')}
                 >
                   変換前
                 </button>
@@ -1374,7 +1429,7 @@ export function OptionsApp() {
                       ? 'secondary is-active'
                       : 'secondary'
                   }
-                  onClick={() => setDisplayMode('target')}
+                  onClick={() => handleSelectDisplayMode('target')}
                 >
                   変換後
                 </button>
@@ -1383,7 +1438,7 @@ export function OptionsApp() {
                   className={
                     displayMode === 'both' ? 'secondary is-active' : 'secondary'
                   }
-                  onClick={() => setDisplayMode('both')}
+                  onClick={() => handleSelectDisplayMode('both')}
                 >
                   両方表示
                 </button>
