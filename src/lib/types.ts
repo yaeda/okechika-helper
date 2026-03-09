@@ -15,6 +15,7 @@ export interface ExtensionSettings {
   enabledRootUrls: string[];
   useSourceGlyphFontInOptions: boolean;
   enableOkck24HourMode: boolean;
+  tooltipSearchOpenInNewTab: boolean;
 }
 
 export interface ExtensionState {

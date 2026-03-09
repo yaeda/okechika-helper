@@ -612,6 +612,19 @@ export function OptionsApp() {
     });
   }
 
+  async function handleToggleTooltipSearchOpenInNewTab(
+    checked: boolean
+  ): Promise<void> {
+    if (!settings) {
+      return;
+    }
+
+    await saveSettings({
+      ...settings,
+      tooltipSearchOpenInNewTab: checked
+    });
+  }
+
   async function handleAddRootUrl(): Promise<void> {
     if (!settings) {
       return;
@@ -851,15 +864,9 @@ export function OptionsApp() {
         <header className="hero">
           <div className="hero-head">
             <div>
-              <p className="eyebrow">
-                <span>桶地下 helper</span>
-                <span className="version-badge">v{extensionVersion}</span>
-              </p>
               <div className="hero-title-row">
-                <h1>設定</h1>
-                <p className="sub hero-sub-inline">
-                  変換表の確認・CSV入出力・対象URLの管理ができます。
-                </p>
+                <h1>桶地下 helper</h1>
+                <span className="version-badge">v{extensionVersion}</span>
               </div>
             </div>
             <div className="hero-side">
@@ -972,6 +979,16 @@ export function OptionsApp() {
                 ))
               )}
             </ul>
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
+              <h2>各種設定</h2>
+            </div>
+            <p className="caption">
+              桶地下サイト向けの追加機能と、tooltip
+              検索の開き方を切り替えできます。
+            </p>
 
             <label className="subtle-setting-card">
               <span className="source-font-toggle">
@@ -993,8 +1010,29 @@ export function OptionsApp() {
                 この設定は世界観を損なうおそれがあります。ご利用の際はあらかじめご了承ください。
               </p>
             </label>
-          </section>
 
+            <label className="subtle-setting-card">
+              <span className="source-font-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.tooltipSearchOpenInNewTab}
+                  onChange={(event) => {
+                    void handleToggleTooltipSearchOpenInNewTab(
+                      event.currentTarget.checked
+                    );
+                  }}
+                />
+                <span>tooltip検索を別タブで開く</span>
+              </span>
+              <p className="caption">
+                OFF の場合は現在のタブで遷移し、ON
+                の場合は新しいタブで検索結果を開きます。
+              </p>
+            </label>
+          </section>
+        </div>
+
+        <div className="top-panels-grid">
           <section className="panel">
             <div className="panel-header">
               <h2>相互変換</h2>
@@ -1156,103 +1194,104 @@ export function OptionsApp() {
               ) : null}
             </div>
           </section>
-        </div>
 
-        <section className="panel">
-          <div className="panel-header">
-            <h2>ブックマーク</h2>
-          </div>
-          <p className="caption">
-            桶地下文字のあるページで追加したブックマークです。タイトルに桶地下文字が含まれる場合は変換結果も表示します。
-          </p>
-
-          {bookmarkGroups.length === 0 ? (
-            <p className="caption">ブックマークはまだありません。</p>
-          ) : (
-            <div className="bookmark-groups">
-              {bookmarkGroups.map((group) => {
-                const isCollapsed = collapsedBookmarkGroups[group.key] ?? false;
-
-                return (
-                  <section key={group.key} className="bookmark-group">
-                    <button
-                      type="button"
-                      className="bookmark-group-toggle"
-                      onClick={() => {
-                        toggleBookmarkGroup(group.key);
-                      }}
-                      aria-expanded={!isCollapsed}
-                    >
-                      <span className="bookmark-group-toggle-main">
-                        <span
-                          className="bookmark-group-chevron"
-                          aria-hidden="true"
-                        >
-                          {isCollapsed ? '▸' : '▾'}
-                        </span>
-                        <span className="bookmark-group-label">
-                          {group.label}
-                        </span>
-                      </span>
-                      <span className="bookmark-group-count">
-                        {group.items.length}件
-                      </span>
-                    </button>
-
-                    {!isCollapsed ? (
-                      <ul className="bookmark-list">
-                        {group.items.map((bookmark) => (
-                          <li key={bookmark.url} className="bookmark-item">
-                            <div className="bookmark-main">
-                              <div className="bookmark-titles">
-                                <a
-                                  href={bookmark.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="bookmark-link"
-                                >
-                                  {bookmark.title}
-                                </a>
-                                {bookmark.decodedTitle ? (
-                                  <p className="caption bookmark-decoded-title">
-                                    {bookmark.decodedTitle}
-                                  </p>
-                                ) : null}
-                              </div>
-                              <p className="caption bookmark-url">
-                                {bookmark.url}
-                              </p>
-                            </div>
-                            <div className="domain-item-actions">
-                              <button
-                                type="button"
-                                className="secondary"
-                                onClick={() => {
-                                  handleOpenBookmark(bookmark.url);
-                                }}
-                              >
-                                開く
-                              </button>
-                              <button
-                                type="button"
-                                className="danger"
-                                onClick={() => {
-                                  void handleRemoveBookmark(bookmark.url);
-                                }}
-                              >
-                                削除
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </section>
-                );
-              })}
+          <section className="panel">
+            <div className="panel-header">
+              <h2>ブックマーク</h2>
             </div>
-          )}
-        </section>
+            <p className="caption">
+              桶地下文字のあるページで追加したブックマークです。タイトルに桶地下文字が含まれる場合は変換結果も表示します。
+            </p>
+
+            {bookmarkGroups.length === 0 ? (
+              <p className="caption">ブックマークはまだありません。</p>
+            ) : (
+              <div className="bookmark-groups">
+                {bookmarkGroups.map((group) => {
+                  const isCollapsed =
+                    collapsedBookmarkGroups[group.key] ?? false;
+
+                  return (
+                    <section key={group.key} className="bookmark-group">
+                      <button
+                        type="button"
+                        className="bookmark-group-toggle"
+                        onClick={() => {
+                          toggleBookmarkGroup(group.key);
+                        }}
+                        aria-expanded={!isCollapsed}
+                      >
+                        <span className="bookmark-group-toggle-main">
+                          <span
+                            className="bookmark-group-chevron"
+                            aria-hidden="true"
+                          >
+                            {isCollapsed ? '▸' : '▾'}
+                          </span>
+                          <span className="bookmark-group-label">
+                            {group.label}
+                          </span>
+                        </span>
+                        <span className="bookmark-group-count">
+                          {group.items.length}件
+                        </span>
+                      </button>
+
+                      {!isCollapsed ? (
+                        <ul className="bookmark-list">
+                          {group.items.map((bookmark) => (
+                            <li key={bookmark.url} className="bookmark-item">
+                              <div className="bookmark-main">
+                                <div className="bookmark-titles">
+                                  <a
+                                    href={bookmark.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="bookmark-link"
+                                  >
+                                    {bookmark.title}
+                                  </a>
+                                  {bookmark.decodedTitle ? (
+                                    <p className="caption bookmark-decoded-title">
+                                      {bookmark.decodedTitle}
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <p className="caption bookmark-url">
+                                  {bookmark.url}
+                                </p>
+                              </div>
+                              <div className="domain-item-actions">
+                                <button
+                                  type="button"
+                                  className="secondary"
+                                  onClick={() => {
+                                    handleOpenBookmark(bookmark.url);
+                                  }}
+                                >
+                                  開く
+                                </button>
+                                <button
+                                  type="button"
+                                  className="danger"
+                                  onClick={() => {
+                                    void handleRemoveBookmark(bookmark.url);
+                                  }}
+                                >
+                                  削除
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
 
         <section className="panel">
           <div className="panel-header">

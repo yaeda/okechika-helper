@@ -22,7 +22,8 @@ export const OKCK_HOST = 'qtes9gu0k.xyz';
 export const DEFAULT_SETTINGS: ExtensionSettings = {
   enabledRootUrls: DEFAULT_ROOT_URLS,
   useSourceGlyphFontInOptions: true,
-  enableOkck24HourMode: false
+  enableOkck24HourMode: false,
+  tooltipSearchOpenInNewTab: false
 };
 
 export const DEFAULT_TABLE: DecodeTable = {
@@ -61,6 +62,9 @@ export async function getState(): Promise<ExtensionState> {
     DEFAULT_SETTINGS.useSourceGlyphFontInOptions;
   const enableOkck24HourMode =
     rawSettings?.enableOkck24HourMode ?? DEFAULT_SETTINGS.enableOkck24HourMode;
+  const tooltipSearchOpenInNewTab =
+    rawSettings?.tooltipSearchOpenInNewTab ??
+    DEFAULT_SETTINGS.tooltipSearchOpenInNewTab;
   const nextRootUrls = (
     storedRootUrls.length > 0 ? storedRootUrls : legacyDomains
   ).map((value) => {
@@ -79,7 +83,8 @@ export async function getState(): Promise<ExtensionState> {
       enabledRootUrls:
         nextRootUrls.length > 0 ? nextRootUrls : DEFAULT_ROOT_URLS,
       useSourceGlyphFontInOptions,
-      enableOkck24HourMode
+      enableOkck24HourMode,
+      tooltipSearchOpenInNewTab
     },
     bookmarks
   };
@@ -90,7 +95,8 @@ export async function setSettings(settings: ExtensionSettings): Promise<void> {
     [STORAGE_KEYS.settings]: {
       enabledRootUrls: settings.enabledRootUrls.map(normalizeRootUrl),
       useSourceGlyphFontInOptions: settings.useSourceGlyphFontInOptions,
-      enableOkck24HourMode: settings.enableOkck24HourMode
+      enableOkck24HourMode: settings.enableOkck24HourMode,
+      tooltipSearchOpenInNewTab: settings.tooltipSearchOpenInNewTab
     } satisfies ExtensionSettings
   });
 }

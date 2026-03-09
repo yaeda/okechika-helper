@@ -58,6 +58,7 @@ body {
 .hero h1 {
   margin: 4px 0;
   font-size: clamp(24px, 4vw, 36px);
+  color: var(--accent);
 }
 
 .hero-head {
