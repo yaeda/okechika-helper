@@ -33,10 +33,19 @@ function createInitialTooltipState(): TooltipState {
   };
 }
 
-function navigateToSearchPage(rootUrl: string, query: string): void {
+function navigateToSearchPage(
+  rootUrl: string,
+  query: string,
+  openInNewTab: boolean
+): void {
   const destinationUrl = new URL(rootUrl);
   destinationUrl.searchParams.set('s', query);
   const destination = destinationUrl.toString();
+
+  if (openInNewTab) {
+    window.open(destination, '_blank', 'noopener,noreferrer');
+    return;
+  }
 
   try {
     if (window.top && window.top !== window) {
@@ -82,7 +91,8 @@ export function createTooltipUi(
   ctx: ContentScriptContext,
   onSubmitMappings: (entries: DecodeMap) => Promise<void>,
   decodeSelectionText: (text: string) => string,
-  getSearchRootUrl: () => string | null
+  getSearchRootUrl: () => string | null,
+  shouldOpenSearchInNewTab: () => boolean
 ): TooltipUi {
   const ui = createIntegratedUi<TooltipMounted>(ctx, {
     position: 'overlay',
@@ -174,7 +184,7 @@ export function createTooltipUi(
                 return;
               }
 
-              navigateToSearchPage(rootUrl, query);
+              navigateToSearchPage(rootUrl, query, shouldOpenSearchInNewTab());
               state = {
                 ...state,
                 visible: false,

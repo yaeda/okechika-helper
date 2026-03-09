@@ -29,6 +29,7 @@ import './style.css';
 
 let currentMappings: DecodeMap = {};
 let currentSearchRootUrl: string | null = null;
+let currentTooltipSearchOpenInNewTab = false;
 let isActive = false;
 let observer: MutationObserver | null = null;
 
@@ -50,6 +51,7 @@ async function refreshActivation(
   const state = await getState();
   currentMappings = state.table.mappings;
   annotation.setMappings(currentMappings);
+  currentTooltipSearchOpenInNewTab = state.settings.tooltipSearchOpenInNewTab;
   const pageUrl = await getPageUrlForMatching();
   currentSearchRootUrl = resolveMatchedRootUrl(state.settings, pageUrl);
   const nextIsActive = shouldRunOnUrl(state.settings, pageUrl);
@@ -135,7 +137,8 @@ export default defineContentScript({
         window.getSelection()?.removeAllRanges();
       },
       decodeSelectedText,
-      () => currentSearchRootUrl
+      () => currentSearchRootUrl,
+      () => currentTooltipSearchOpenInNewTab
     );
 
     void refreshActivation(tooltip, annotation, bookmarkButton);
