@@ -1,6 +1,23 @@
 # Changelog
 
 
+## v1.5.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.4.0...v1.5.0)
+
+### 🚀 Enhancements
+
+- **options:** Add tooltip search tab setting ([46fef49](https://github.com/yaeda/okechika-helper/commit/46fef49))
+- **options:** Persist local options ui state ([a9621f1](https://github.com/yaeda/okechika-helper/commit/a9621f1))
+
+### 📖 Documentation
+
+- **readme:** Refresh feature overview ([07fe6d3](https://github.com/yaeda/okechika-helper/commit/07fe6d3))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.4.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.3.0...v1.4.0)
