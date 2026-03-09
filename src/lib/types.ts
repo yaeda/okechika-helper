@@ -18,6 +18,16 @@ export interface ExtensionSettings {
   tooltipSearchOpenInNewTab: boolean;
 }
 
+export type OptionsConverterTab = 'glyphToText' | 'textToGlyph';
+
+export type OptionsTableDisplayMode = 'source' | 'target' | 'both';
+
+export interface OptionsUiState {
+  showRootUrls: boolean;
+  converterTab: OptionsConverterTab;
+  tableDisplayMode: OptionsTableDisplayMode;
+}
+
 export interface ExtensionState {
   table: DecodeTable;
   settings: ExtensionSettings;
