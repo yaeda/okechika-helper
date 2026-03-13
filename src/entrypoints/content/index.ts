@@ -30,6 +30,7 @@ import './style.css';
 let currentMappings: DecodeMap = {};
 let currentSearchRootUrl: string | null = null;
 let currentTooltipSearchOpenInNewTab = false;
+let currentOkck24HourModeEnabled = false;
 let isActive = false;
 let observer: MutationObserver | null = null;
 
@@ -52,6 +53,7 @@ async function refreshActivation(
   currentMappings = state.table.mappings;
   annotation.setMappings(currentMappings);
   currentTooltipSearchOpenInNewTab = state.settings.tooltipSearchOpenInNewTab;
+  currentOkck24HourModeEnabled = state.settings.enableOkck24HourMode;
   const pageUrl = await getPageUrlForMatching();
   currentSearchRootUrl = resolveMatchedRootUrl(state.settings, pageUrl);
   const nextIsActive = shouldRunOnUrl(state.settings, pageUrl);
@@ -138,7 +140,8 @@ export default defineContentScript({
       },
       decodeSelectedText,
       () => currentSearchRootUrl,
-      () => currentTooltipSearchOpenInNewTab
+      () => currentTooltipSearchOpenInNewTab,
+      () => currentOkck24HourModeEnabled
     );
 
     void refreshActivation(tooltip, annotation, bookmarkButton);

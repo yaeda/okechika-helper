@@ -6,6 +6,7 @@ import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import type { DecodeMap } from '@/lib/types';
 import { filterTranslatableGlyphChars } from '@/entrypoints/content/glyph';
 import { Tooltip, type TooltipState } from '@/entrypoints/content/Tooltip';
+import { openSearchPage, shouldUsePostSearch } from '@/lib/search';
 
 interface TooltipMounted {
   root: Root;
@@ -31,32 +32,6 @@ function createInitialTooltipState(): TooltipState {
     inputValue: '',
     error: ''
   };
-}
-
-function navigateToSearchPage(
-  rootUrl: string,
-  query: string,
-  openInNewTab: boolean
-): void {
-  const destinationUrl = new URL(rootUrl);
-  destinationUrl.searchParams.set('s', query);
-  const destination = destinationUrl.toString();
-
-  if (openInNewTab) {
-    window.open(destination, '_blank', 'noopener,noreferrer');
-    return;
-  }
-
-  try {
-    if (window.top && window.top !== window) {
-      window.top.location.href = destination;
-      return;
-    }
-  } catch {
-    // Ignore cross-origin access errors and fallback to current frame.
-  }
-
-  window.location.href = destination;
 }
 
 function createDecodeEntries(
@@ -92,7 +67,8 @@ export function createTooltipUi(
   onSubmitMappings: (entries: DecodeMap) => Promise<void>,
   decodeSelectionText: (text: string) => string,
   getSearchRootUrl: () => string | null,
-  shouldOpenSearchInNewTab: () => boolean
+  shouldOpenSearchInNewTab: () => boolean,
+  isOkck24HourModeEnabled: () => boolean
 ): TooltipUi {
   const ui = createIntegratedUi<TooltipMounted>(ctx, {
     position: 'overlay',
@@ -184,7 +160,12 @@ export function createTooltipUi(
                 return;
               }
 
-              navigateToSearchPage(rootUrl, query, shouldOpenSearchInNewTab());
+              openSearchPage({
+                rootUrl,
+                query,
+                openInNewTab: shouldOpenSearchInNewTab(),
+                usePost: shouldUsePostSearch(rootUrl, isOkck24HourModeEnabled())
+              });
               state = {
                 ...state,
                 visible: false,
