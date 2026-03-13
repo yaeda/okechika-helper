@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import type { ReactNode } from 'react';
 
 import {
@@ -67,6 +68,18 @@ function getOfficialSearchUrl(query: string): string {
   const destinationUrl = new URL('https://www.qtes9gu0k.xyz/');
   destinationUrl.searchParams.set('s', query);
   return destinationUrl.toString();
+}
+
+function handleClickableItemKeyDown(
+  event: KeyboardEvent<HTMLElement>,
+  onActivate: () => void
+): void {
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return;
+  }
+
+  event.preventDefault();
+  onActivate();
 }
 
 function parseMappingsCsv(csvText: string): DecodeMap {
@@ -1008,22 +1021,27 @@ export function OptionsApp() {
                 <li className="empty">対象ルートURLは未設定です。</li>
               ) : (
                 settings.enabledRootUrls.map((rootUrl) => (
-                  <li key={rootUrl} className="domain-item">
+                  <li
+                    key={rootUrl}
+                    className="domain-item domain-item-clickable"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      handleOpenRootUrl(rootUrl);
+                    }}
+                    onKeyDown={(event) => {
+                      handleClickableItemKeyDown(event, () => {
+                        handleOpenRootUrl(rootUrl);
+                      });
+                    }}
+                  >
                     <span>{showRootUrls ? rootUrl : maskRootUrl(rootUrl)}</span>
                     <div className="domain-item-actions">
                       <button
                         type="button"
-                        className="secondary"
-                        onClick={() => {
-                          handleOpenRootUrl(rootUrl);
-                        }}
-                      >
-                        開く
-                      </button>
-                      <button
-                        type="button"
                         className="danger"
-                        onClick={() => {
+                        onClick={(event) => {
+                          event.stopPropagation();
                           void handleRemoveRootUrl(rootUrl);
                         }}
                       >
@@ -1295,17 +1313,25 @@ export function OptionsApp() {
                       {!isCollapsed ? (
                         <ul className="bookmark-list">
                           {group.items.map((bookmark) => (
-                            <li key={bookmark.url} className="bookmark-item">
+                            <li
+                              key={bookmark.url}
+                              className="bookmark-item bookmark-item-clickable"
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => {
+                                handleOpenBookmark(bookmark.url);
+                              }}
+                              onKeyDown={(event) => {
+                                handleClickableItemKeyDown(event, () => {
+                                  handleOpenBookmark(bookmark.url);
+                                });
+                              }}
+                            >
                               <div className="bookmark-main">
                                 <div className="bookmark-titles">
-                                  <a
-                                    href={bookmark.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="bookmark-link"
-                                  >
+                                  <span className="bookmark-link">
                                     {bookmark.title}
-                                  </a>
+                                  </span>
                                   {bookmark.decodedTitle ? (
                                     <p className="caption bookmark-decoded-title">
                                       {bookmark.decodedTitle}
@@ -1319,17 +1345,9 @@ export function OptionsApp() {
                               <div className="domain-item-actions">
                                 <button
                                   type="button"
-                                  className="secondary"
-                                  onClick={() => {
-                                    handleOpenBookmark(bookmark.url);
-                                  }}
-                                >
-                                  開く
-                                </button>
-                                <button
-                                  type="button"
                                   className="danger"
-                                  onClick={() => {
+                                  onClick={(event) => {
+                                    event.stopPropagation();
                                     void handleRemoveBookmark(bookmark.url);
                                   }}
                                 >
