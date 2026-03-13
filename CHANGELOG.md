@@ -1,6 +1,23 @@
 # Changelog
 
 
+## v1.6.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.5.0...v1.6.0)
+
+### 🚀 Enhancements
+
+- **options:** Make target urls and bookmarks fully clickable ([584e32e](https://github.com/yaeda/okechika-helper/commit/584e32e))
+- **okck:** Switch 24h mode searches to post ([e24558a](https://github.com/yaeda/okechika-helper/commit/e24558a))
+
+### 📖 Documentation
+
+- **spec:** Reorganize spec structure ([bf7d8f6](https://github.com/yaeda/okechika-helper/commit/bf7d8f6))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.5.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.4.0...v1.5.0)
