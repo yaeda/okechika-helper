@@ -357,6 +357,20 @@ button:hover {
   min-width: 0;
 }
 
+.domain-item-clickable {
+  cursor: pointer;
+}
+
+.domain-item-clickable:hover {
+  border-color: #d4c2b0;
+  background: #faf6f1;
+}
+
+.domain-item-clickable:focus-visible {
+  outline: 2px solid #8a3514;
+  outline-offset: 2px;
+}
+
 .domain-item > span {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -434,9 +448,25 @@ button:hover {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 2px;
-  background: transparent;
-  border-bottom: 1px solid #e7dfd7;
+  padding: 12px;
+  background: #fffdfa;
+  border: 1px solid #eadfcb;
+  border-radius: 14px;
+}
+
+.bookmark-item-clickable {
+  cursor: pointer;
+}
+
+.bookmark-item-clickable:hover {
+  border-color: #d4c2b0;
+  background: #faf6f1;
+}
+
+.bookmark-item-clickable:focus-visible {
+  outline: none;
+  border-color: #b9933a;
+  box-shadow: 0 0 0 3px rgba(185, 147, 58, 0.18);
 }
 
 .bookmark-group .bookmark-list {
@@ -444,11 +474,6 @@ button:hover {
   padding: 12px;
   max-height: 320px;
   overflow: auto;
-}
-
-.bookmark-group .bookmark-list > .bookmark-item:last-child {
-  border-bottom: 0;
-  padding-bottom: 2px;
 }
 
 .bookmark-main {
@@ -468,7 +493,7 @@ button:hover {
   line-height: 1.35;
 }
 
-.bookmark-link:hover {
+.bookmark-item-clickable:hover .bookmark-link {
   text-decoration: underline;
 }
 
@@ -480,6 +505,7 @@ button:hover {
 
 .bookmark-decoded-title {
   font-size: 12px;
+  color: #815f11;
 }
 
 .bookmark-url {
