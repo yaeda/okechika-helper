@@ -21,6 +21,7 @@ import {
   setSettings,
   toCsv
 } from '@/lib/storage';
+import { openSearchPage, shouldUsePostSearch } from '@/lib/search';
 import { requestRootUrlPermission } from '@/lib/host-permissions';
 import {
   OKECHIKA_CHARS,
@@ -62,12 +63,6 @@ async function downloadCsv(mappings: DecodeMap): Promise<void> {
   anchor.click();
 
   URL.revokeObjectURL(url);
-}
-
-function getOfficialSearchUrl(query: string): string {
-  const destinationUrl = new URL('https://www.qtes9gu0k.xyz/');
-  destinationUrl.searchParams.set('s', query);
-  return destinationUrl.toString();
 }
 
 function handleClickableItemKeyDown(
@@ -740,7 +735,13 @@ export function OptionsApp() {
   }
 
   function handleSearchOfficialSite(query: string): void {
-    window.open(getOfficialSearchUrl(query), '_blank', 'noopener,noreferrer');
+    const rootUrl = 'https://www.qtes9gu0k.xyz/';
+    openSearchPage({
+      rootUrl,
+      query,
+      openInNewTab: true,
+      usePost: shouldUsePostSearch(rootUrl, settings.enableOkck24HourMode)
+    });
   }
 
   async function handleResetDefaultRootUrls(): Promise<void> {
@@ -1076,9 +1077,6 @@ export function OptionsApp() {
                 />
                 <span>桶地下サイトを24時間営業にする</span>
               </span>
-              <p className="caption">
-                この設定を変更した場合はページをリロードするか開き直して下さい。
-              </p>
               <p className="caption">
                 この設定は世界観を損なうおそれがあります。ご利用の際はあらかじめご了承ください。
               </p>

@@ -2,15 +2,9 @@ import {
   getContentScriptMatchesForPermittedOrigins,
   hasRootUrlPermission
 } from '@/lib/host-permissions';
-import {
-  DEFAULT_SETTINGS,
-  DEFAULT_TABLE,
-  getState,
-  isOkckHost
-} from '@/lib/storage';
+import { DEFAULT_SETTINGS, DEFAULT_TABLE, getState } from '@/lib/storage';
 
 const CONTENT_SCRIPT_ID = 'okechika-content-runtime';
-const OKCK_REDIRECT_GUARD_SCRIPT_ID = 'okechika-okck-redirect-guard-runtime';
 const CONTENT_SCRIPT_REGISTRATION: Omit<
   chrome.scripting.RegisteredContentScript,
   'id' | 'matches'
@@ -20,17 +14,6 @@ const CONTENT_SCRIPT_REGISTRATION: Omit<
   allFrames: true,
   matchOriginAsFallback: true,
   runAt: 'document_idle',
-  persistAcrossSessions: true
-};
-const OKCK_REDIRECT_GUARD_SCRIPT_REGISTRATION: Omit<
-  chrome.scripting.RegisteredContentScript,
-  'id' | 'matches'
-> = {
-  js: ['okck-redirect-guard.js'],
-  allFrames: false,
-  matchOriginAsFallback: false,
-  runAt: 'document_start',
-  world: 'MAIN',
   persistAcrossSessions: true
 };
 
@@ -75,50 +58,6 @@ async function syncRuntimeContentScript(): Promise<void> {
   );
 }
 
-async function syncOkckRedirectGuardScript(): Promise<void> {
-  const state = await getState();
-  if (!state.settings.enableOkck24HourMode) {
-    await chrome.scripting
-      .unregisterContentScripts({ ids: [OKCK_REDIRECT_GUARD_SCRIPT_ID] })
-      .catch(() => {});
-    return;
-  }
-
-  const allowedMatches = await Promise.all(
-    state.settings.enabledRootUrls.map(async (rootUrl) => {
-      try {
-        if (!isOkckHost(new URL(rootUrl).hostname)) {
-          return [];
-        }
-      } catch {
-        return [];
-      }
-
-      const granted = await hasRootUrlPermission(rootUrl);
-      return granted ? getContentScriptMatchesForPermittedOrigins(rootUrl) : [];
-    })
-  );
-  const matches = Array.from(new Set(allowedMatches.flat()));
-
-  if (matches.length === 0) {
-    await chrome.scripting
-      .unregisterContentScripts({ ids: [OKCK_REDIRECT_GUARD_SCRIPT_ID] })
-      .catch(() => {});
-    return;
-  }
-
-  const nextRegistration: chrome.scripting.RegisteredContentScript = {
-    id: OKCK_REDIRECT_GUARD_SCRIPT_ID,
-    matches,
-    ...OKCK_REDIRECT_GUARD_SCRIPT_REGISTRATION
-  };
-
-  await upsertRegisteredContentScript(
-    nextRegistration,
-    'Failed to update okck redirect guard registration'
-  );
-}
-
 async function upsertRegisteredContentScript(
   registration: chrome.scripting.RegisteredContentScript,
   errorLabel: string
@@ -149,7 +88,6 @@ function queueSyncRuntimeContentScript(): void {
   syncChain = syncChain
     .then(async () => {
       await syncRuntimeContentScript();
-      await syncOkckRedirectGuardScript();
     })
     .catch((error) =>
       console.error('Failed to sync extension runtime state', error)
