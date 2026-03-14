@@ -72,7 +72,7 @@ export async function getState(): Promise<ExtensionState> {
   const table =
     (syncResult[STORAGE_KEYS.table] as DecodeTable | undefined) ??
     DEFAULT_TABLE;
-  const discoveredPages = normalizeSavedPages(
+  const storedDiscoveredPages = normalizeSavedPages(
     localResult[STORAGE_KEYS.discoveredPages]
   );
   const bookmarks = normalizeBookmarks(syncResult[STORAGE_KEYS.bookmarks]);
@@ -113,7 +113,7 @@ export async function getState(): Promise<ExtensionState> {
       enableOkck24HourMode,
       tooltipSearchOpenInNewTab
     },
-    discoveredPages,
+    discoveredPages: mergeSavedPages(storedDiscoveredPages, bookmarks),
     bookmarks
   };
 }
@@ -429,4 +429,23 @@ function normalizeSavedPages(value: unknown): DiscoveredPageEntry[] {
 
 function normalizeBookmarks(value: unknown): BookmarkEntry[] {
   return normalizeSavedPages(value);
+}
+
+function mergeSavedPages(
+  primaryPages: DiscoveredPageEntry[],
+  fallbackPages: BookmarkEntry[]
+): DiscoveredPageEntry[] {
+  const mergedPages = [...primaryPages];
+  const seenUrls = new Set(primaryPages.map((page) => page.url));
+
+  for (const page of fallbackPages) {
+    if (seenUrls.has(page.url)) {
+      continue;
+    }
+
+    seenUrls.add(page.url);
+    mergedPages.push(page);
+  }
+
+  return mergedPages;
 }
