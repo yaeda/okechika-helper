@@ -1,3 +1,6 @@
+@import '../../components/bookmark-list.css';
+@import '../../components/bookmark-ui.css';
+
 :root {
   color-scheme: light;
   font-family:
@@ -99,90 +102,38 @@ select {
   font-size: 13px;
 }
 
-.popup-bookmark-list {
-  margin: 0;
-  padding: 8px;
-  list-style: none;
-  overflow-y: auto;
-}
-
-.popup-bookmark-list li + li {
-  margin-top: 8px;
-}
-
-.popup-bookmark-item {
+.popup-filter-row {
   display: flex;
-  gap: 10px;
-  border: 1px solid #eadfcb;
-  border-radius: 14px;
+  gap: 8px;
+  padding: 10px 14px 0;
+}
+
+.popup-filter-chip {
+  border: 1px solid #dccca7;
+  border-radius: 999px;
   background: #fffdfa;
-  padding: 12px;
-  cursor: pointer;
-}
-
-.popup-bookmark-item:hover,
-.popup-bookmark-item:focus-visible {
-  outline: none;
-  border-color: #b9933a;
-  box-shadow: 0 0 0 3px rgba(185, 147, 58, 0.18);
-}
-
-.popup-bookmark-main {
-  min-width: 0;
-  flex: 1;
-}
-
-.popup-bookmark-title,
-.popup-bookmark-decoded,
-.popup-bookmark-url {
-  margin: 0;
-}
-
-.popup-bookmark-title {
-  font-size: 13px;
-  font-weight: 700;
-  word-break: break-word;
-}
-
-.popup-bookmark-decoded,
-.popup-bookmark-url {
-  margin-top: 4px;
-  color: #6b7280;
-  font-size: 11px;
-  word-break: break-all;
-}
-
-.popup-bookmark-decoded {
-  color: #815f11;
-}
-
-.popup-bookmark-actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: stretch;
-  justify-content: center;
-}
-
-.popup-action-button {
-  border: 1px solid #d6c9a6;
-  border-radius: 10px;
-  background: #fff;
-  padding: 8px 10px;
-  color: #3f3a2f;
+  padding: 6px 10px;
+  color: #6b5f43;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
-.popup-action-button:hover {
-  background: #fffbef;
+.popup-filter-chip:hover {
+  background: #fff7e7;
 }
 
-.popup-action-button.danger {
-  border-color: #e6c0b7;
-  color: #a3392d;
+.popup-filter-chip.is-active {
+  border-color: #b9933a;
+  background: #fff1cf;
+  color: #7c5f19;
 }
 
-.popup-action-button.danger:hover {
-  background: #fff5f3;
+.popup-bookmark-list {
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.popup-bookmark-list .bookmark-url {
+  word-break: break-all;
 }

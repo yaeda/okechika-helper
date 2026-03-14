@@ -1,10 +1,14 @@
 export type DecodeMap = Record<string, string>;
 
-export interface BookmarkEntry {
+export interface SavedPageEntry {
   url: string;
   title: string;
   rootUrl: string | null;
 }
+
+export type DiscoveredPageEntry = SavedPageEntry;
+
+export type BookmarkEntry = SavedPageEntry;
 
 export interface DecodeTable {
   mappings: DecodeMap;
@@ -28,8 +32,13 @@ export interface OptionsUiState {
   tableDisplayMode: OptionsTableDisplayMode;
 }
 
+export interface PopupUiState {
+  showBookmarkedOnly: boolean;
+}
+
 export interface ExtensionState {
   table: DecodeTable;
   settings: ExtensionSettings;
+  discoveredPages: DiscoveredPageEntry[];
   bookmarks: BookmarkEntry[];
 }

@@ -2,16 +2,20 @@ import type {
   BookmarkEntry,
   DecodeMap,
   DecodeTable,
+  DiscoveredPageEntry,
   ExtensionSettings,
   ExtensionState,
-  OptionsUiState
+  OptionsUiState,
+  PopupUiState
 } from '@/lib/types';
 
 const STORAGE_KEYS = {
   table: 'decodeTable',
   settings: 'settings',
+  discoveredPages: 'discoveredPages',
   bookmarks: 'bookmarks',
-  optionsUiState: 'optionsUiState'
+  optionsUiState: 'optionsUiState',
+  popupUiState: 'popupUiState'
 } as const;
 
 export const DEFAULT_ROOT_URLS = [
@@ -39,6 +43,10 @@ export const DEFAULT_OPTIONS_UI_STATE: OptionsUiState = {
   tableDisplayMode: 'both'
 };
 
+export const DEFAULT_POPUP_UI_STATE: PopupUiState = {
+  showBookmarkedOnly: false
+};
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -52,16 +60,23 @@ function getLocalStorage(): chrome.storage.StorageArea {
 }
 
 export async function getState(): Promise<ExtensionState> {
-  const result = await getSyncStorage().get([
-    STORAGE_KEYS.table,
-    STORAGE_KEYS.settings,
-    STORAGE_KEYS.bookmarks
+  const [syncResult, localResult] = await Promise.all([
+    getSyncStorage().get([
+      STORAGE_KEYS.table,
+      STORAGE_KEYS.settings,
+      STORAGE_KEYS.bookmarks
+    ]),
+    getLocalStorage().get(STORAGE_KEYS.discoveredPages)
   ]);
 
   const table =
-    (result[STORAGE_KEYS.table] as DecodeTable | undefined) ?? DEFAULT_TABLE;
-  const bookmarks = normalizeBookmarks(result[STORAGE_KEYS.bookmarks]);
-  const rawSettings = result[STORAGE_KEYS.settings] as
+    (syncResult[STORAGE_KEYS.table] as DecodeTable | undefined) ??
+    DEFAULT_TABLE;
+  const discoveredPages = normalizeSavedPages(
+    localResult[STORAGE_KEYS.discoveredPages]
+  );
+  const bookmarks = normalizeBookmarks(syncResult[STORAGE_KEYS.bookmarks]);
+  const rawSettings = syncResult[STORAGE_KEYS.settings] as
     | (Partial<ExtensionSettings> & {
         enabledDomains?: string[];
         enableAllSites?: boolean;
@@ -98,6 +113,7 @@ export async function getState(): Promise<ExtensionState> {
       enableOkck24HourMode,
       tooltipSearchOpenInNewTab
     },
+    discoveredPages,
     bookmarks
   };
 }
@@ -125,11 +141,30 @@ export async function getOptionsUiState(): Promise<OptionsUiState> {
   };
 }
 
+export async function getPopupUiState(): Promise<PopupUiState> {
+  const result = await getLocalStorage().get(STORAGE_KEYS.popupUiState);
+  const rawUiState = result[STORAGE_KEYS.popupUiState] as
+    | Partial<PopupUiState>
+    | undefined;
+
+  return {
+    showBookmarkedOnly:
+      rawUiState?.showBookmarkedOnly ??
+      DEFAULT_POPUP_UI_STATE.showBookmarkedOnly
+  };
+}
+
 export async function setOptionsUiState(
   uiState: OptionsUiState
 ): Promise<void> {
   await getLocalStorage().set({
     [STORAGE_KEYS.optionsUiState]: uiState satisfies OptionsUiState
+  });
+}
+
+export async function setPopupUiState(uiState: PopupUiState): Promise<void> {
+  await getLocalStorage().set({
+    [STORAGE_KEYS.popupUiState]: uiState satisfies PopupUiState
   });
 }
 
@@ -174,9 +209,27 @@ export async function setBookmarks(bookmarks: BookmarkEntry[]): Promise<void> {
   });
 }
 
-export async function removeBookmark(url: string): Promise<void> {
-  const state = await getState();
-  await setBookmarks(state.bookmarks.filter((entry) => entry.url !== url));
+export async function setDiscoveredPages(
+  discoveredPages: DiscoveredPageEntry[]
+): Promise<void> {
+  await getLocalStorage().set({
+    [STORAGE_KEYS.discoveredPages]: normalizeSavedPages(discoveredPages)
+  });
+}
+
+export async function recordDiscoveredPage(
+  page: DiscoveredPageEntry
+): Promise<void> {
+  const result = await getLocalStorage().get(STORAGE_KEYS.discoveredPages);
+  const storedDiscoveredPages = normalizeSavedPages(
+    result[STORAGE_KEYS.discoveredPages]
+  );
+  const normalizedPage = normalizeSavedPage(page);
+  const nextPages = [
+    normalizedPage,
+    ...storedDiscoveredPages.filter((entry) => entry.url !== normalizedPage.url)
+  ];
+  await setDiscoveredPages(nextPages);
 }
 
 export async function toggleBookmark(
@@ -319,20 +372,26 @@ function normalizeMappings(mappings: DecodeMap): DecodeMap {
   );
 }
 
-function normalizeBookmark(bookmark: BookmarkEntry): BookmarkEntry {
+function normalizeSavedPage<T extends DiscoveredPageEntry | BookmarkEntry>(
+  page: T
+): T {
   return {
-    url: bookmark.url.trim(),
-    title: bookmark.title.trim() || bookmark.url.trim(),
-    rootUrl: bookmark.rootUrl ? normalizeRootUrl(bookmark.rootUrl) : null
-  };
+    url: page.url.trim(),
+    title: page.title.trim() || page.url.trim(),
+    rootUrl: page.rootUrl ? normalizeRootUrl(page.rootUrl) : null
+  } as T;
 }
 
-function normalizeBookmarks(value: unknown): BookmarkEntry[] {
+function normalizeBookmark(bookmark: BookmarkEntry): BookmarkEntry {
+  return normalizeSavedPage(bookmark);
+}
+
+function normalizeSavedPages(value: unknown): DiscoveredPageEntry[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
-  const nextBookmarks: BookmarkEntry[] = [];
+  const nextPages: DiscoveredPageEntry[] = [];
   const seenUrls = new Set<string>();
 
   for (const entry of value) {
@@ -358,12 +417,16 @@ function normalizeBookmarks(value: unknown): BookmarkEntry[] {
     }
 
     seenUrls.add(url);
-    nextBookmarks.push({
+    nextPages.push({
       url,
       title: title || url,
       rootUrl
     });
   }
 
-  return nextBookmarks;
+  return nextPages;
+}
+
+function normalizeBookmarks(value: unknown): BookmarkEntry[] {
+  return normalizeSavedPages(value);
 }

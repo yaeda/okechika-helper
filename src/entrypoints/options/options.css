@@ -1,3 +1,6 @@
+@import '../../components/bookmark-list.css';
+@import '../../components/bookmark-ui.css';
+
 @font-face {
   font-family: 'UndergroundUnknownGlyphs';
   src: url('../../assets/UnknownGlyphs.woff') format('woff');
@@ -381,12 +384,30 @@ button:hover {
   gap: 8px;
 }
 
-.bookmark-list {
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
-  display: grid;
+.bookmark-filter-row {
+  display: flex;
   gap: 8px;
+  margin: 12px 0;
+}
+
+.filter-chip {
+  border: 1px solid #dccca7;
+  border-radius: 999px;
+  background: #fffdfa;
+  padding: 6px 12px;
+  color: #6b5f43;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.filter-chip:hover {
+  background: #fff7e7;
+}
+
+.filter-chip.is-active {
+  border-color: #b9933a;
+  background: #fff1cf;
+  color: #7c5f19;
 }
 
 .bookmark-groups {
@@ -443,84 +464,11 @@ button:hover {
   font-size: 13px;
 }
 
-.bookmark-item {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  background: #fffdfa;
-  border: 1px solid #eadfcb;
-  border-radius: 14px;
-}
-
-.bookmark-item-clickable {
-  cursor: pointer;
-}
-
-.bookmark-item-clickable:hover {
-  border-color: #d4c2b0;
-  background: #faf6f1;
-}
-
-.bookmark-item-clickable:focus-visible {
-  outline: none;
-  border-color: #b9933a;
-  box-shadow: 0 0 0 3px rgba(185, 147, 58, 0.18);
-}
-
 .bookmark-group .bookmark-list {
   margin: 0;
   padding: 12px;
   max-height: 320px;
   overflow: auto;
-}
-
-.bookmark-main {
-  min-width: 0;
-  flex: 1;
-}
-
-.bookmark-titles {
-  min-width: 0;
-}
-
-.bookmark-link {
-  color: #8a3514;
-  font-weight: 700;
-  text-decoration: none;
-  overflow-wrap: anywhere;
-  line-height: 1.35;
-}
-
-.bookmark-item-clickable:hover .bookmark-link {
-  text-decoration: underline;
-}
-
-.bookmark-decoded-title,
-.bookmark-url {
-  margin-top: 2px;
-  overflow-wrap: anywhere;
-}
-
-.bookmark-decoded-title {
-  font-size: 12px;
-  color: #815f11;
-}
-
-.bookmark-url {
-  font-size: 12px;
-  color: #84776d;
-}
-
-.bookmark-item .domain-item-actions {
-  flex-shrink: 0;
-}
-
-.bookmark-item .domain-item-actions .secondary,
-.bookmark-item .domain-item-actions .danger {
-  padding: 6px 10px;
-  font-size: 12px;
 }
 
 .empty {

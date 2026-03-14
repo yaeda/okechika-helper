@@ -1,6 +1,7 @@
 import { decodeTextWithMappings } from '@/lib/conversion';
 import {
   getState,
+  recordDiscoveredPage,
   resolveMatchedRootUrl,
   shouldRunOnUrl,
   toggleBookmark,
@@ -13,7 +14,6 @@ import {
 } from '@/entrypoints/content/annotation';
 import {
   createBookmarkButton,
-  pageHasGlyphContent,
   type BookmarkButtonController
 } from '@/entrypoints/content/bookmark-ui';
 import {
@@ -44,6 +44,39 @@ function decodeSelectedText(text: string): string {
     .join('');
 }
 
+async function syncPageStatus(
+  bookmarkButton: BookmarkButtonController,
+  state?: Awaited<ReturnType<typeof getState>>
+): Promise<boolean> {
+  const nextState = state ?? (await getState());
+  const pageUrl = await getPageUrlForMatching();
+  currentSearchRootUrl = resolveMatchedRootUrl(nextState.settings, pageUrl);
+  const nextIsActive = shouldRunOnUrl(nextState.settings, pageUrl);
+  const discoveredEntry = nextState.discoveredPages.find(
+    (page) => page.url === pageUrl
+  );
+  const isBookmarked = nextState.bookmarks.some(
+    (bookmark) => bookmark.url === pageUrl
+  );
+
+  if (
+    nextIsActive &&
+    (!discoveredEntry ||
+      discoveredEntry.title !== (document.title || pageUrl) ||
+      discoveredEntry.rootUrl !== currentSearchRootUrl)
+  ) {
+    await recordDiscoveredPage({
+      url: pageUrl,
+      title: document.title || pageUrl,
+      rootUrl: currentSearchRootUrl
+    });
+  }
+
+  bookmarkButton.setBookmarked(isBookmarked);
+  bookmarkButton.setVisible(nextIsActive);
+  return nextIsActive;
+}
+
 async function refreshActivation(
   tooltip: Pick<TooltipUi, 'hide'>,
   annotation: AnnotationController,
@@ -54,14 +87,7 @@ async function refreshActivation(
   annotation.setMappings(currentMappings);
   currentTooltipSearchOpenInNewTab = state.settings.tooltipSearchOpenInNewTab;
   currentOkck24HourModeEnabled = state.settings.enableOkck24HourMode;
-  const pageUrl = await getPageUrlForMatching();
-  currentSearchRootUrl = resolveMatchedRootUrl(state.settings, pageUrl);
-  const nextIsActive = shouldRunOnUrl(state.settings, pageUrl);
-  const isBookmarked = state.bookmarks.some(
-    (bookmark) => bookmark.url === pageUrl
-  );
-  bookmarkButton.setBookmarked(isBookmarked);
-  bookmarkButton.setVisible(nextIsActive && pageHasGlyphContent());
+  const nextIsActive = await syncPageStatus(bookmarkButton, state);
 
   if (nextIsActive === isActive) {
     if (isActive) {
@@ -93,7 +119,7 @@ function observeDomChanges(
 
   observer = new MutationObserver(() => {
     annotation.annotateDocument();
-    bookmarkButton.setVisible(isActive && pageHasGlyphContent());
+    void syncPageStatus(bookmarkButton);
   });
 
   observer.observe(document.body, {

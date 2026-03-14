@@ -4,6 +4,10 @@ import type { KeyboardEvent } from 'react';
 import type { ReactNode } from 'react';
 
 import {
+  BookmarkListItem,
+  type BookmarkListItemData
+} from '@/components/bookmark-list-item';
+import {
   containsKnownGlyphChars,
   decodeTextWithMappings
 } from '@/lib/conversion';
@@ -14,11 +18,11 @@ import {
   getState,
   getOptionsUiState,
   normalizeRootUrl,
-  removeBookmark,
   resolveMatchedRootUrl,
   setMappings,
   setOptionsUiState,
   setSettings,
+  toggleBookmark,
   toCsv
 } from '@/lib/storage';
 import { openSearchPage, shouldUsePostSearch } from '@/lib/search';
@@ -32,6 +36,7 @@ import type {
   BookmarkEntry,
   DecodeMap,
   DecodeTable,
+  DiscoveredPageEntry,
   ExtensionSettings,
   OptionsConverterTab,
   OptionsTableDisplayMode,
@@ -335,7 +340,11 @@ export function OptionsApp() {
   );
   const [settings, setLocalSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
+  const [discoveredPages, setDiscoveredPages] = useState<DiscoveredPageEntry[]>(
+    []
+  );
   const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>([]);
+  const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newRootUrlInput, setNewRootUrlInput] = useState('');
   const [rootUrlError, setRootUrlError] = useState('');
@@ -381,6 +390,7 @@ export function OptionsApp() {
       ]);
       setLocalSettings(state.settings);
       setTable(state.table);
+      setDiscoveredPages(state.discoveredPages);
       setBookmarks(state.bookmarks);
       applyOptionsUiState(uiState);
       setLoading(false);
@@ -394,6 +404,7 @@ export function OptionsApp() {
       if (
         (areaName === 'sync' &&
           (changes.decodeTable || changes.settings || changes.bookmarks)) ||
+        (areaName === 'local' && changes.discoveredPages) ||
         (areaName === 'local' && changes.optionsUiState)
       ) {
         void load();
@@ -457,48 +468,62 @@ export function OptionsApp() {
       );
   }, [table]);
 
-  const bookmarkItems = useMemo(() => {
+  const bookmarkedUrls = useMemo(
+    () => new Set(bookmarks.map((bookmark) => bookmark.url)),
+    [bookmarks]
+  );
+
+  const discoveredPageItems = useMemo<
+    Array<BookmarkListItemData & { rootUrl: string | null }>
+  >(() => {
     const mappings = table?.mappings ?? {};
 
-    return bookmarks.map((bookmark) => {
-      const hasGlyphTitle = containsKnownGlyphChars(bookmark.title);
-      const rootUrl =
-        bookmark.rootUrl ??
-        resolveMatchedRootUrl(settings ?? DEFAULT_SETTINGS, bookmark.url);
+    return discoveredPages
+      .map((page) => {
+        const hasGlyphTitle = containsKnownGlyphChars(page.title);
+        const rootUrl =
+          page.rootUrl ??
+          resolveMatchedRootUrl(settings ?? DEFAULT_SETTINGS, page.url);
 
-      return {
-        ...bookmark,
-        rootUrl,
-        decodedTitle: hasGlyphTitle
-          ? decodeTextWithMappings(bookmark.title, mappings)
-          : null
-      };
-    });
-  }, [bookmarks, settings, table]);
+        return {
+          ...page,
+          rootUrl,
+          decodedTitle: hasGlyphTitle
+            ? decodeTextWithMappings(page.title, mappings)
+            : null,
+          isBookmarked: bookmarkedUrls.has(page.url)
+        };
+      })
+      .sort((a, b) => a.url.localeCompare(b.url));
+  }, [bookmarkedUrls, discoveredPages, settings, table]);
 
-  const bookmarkGroups = useMemo(() => {
+  const discoveredPageGroups = useMemo(() => {
     const groups = new Map<
       string,
       {
         key: string;
         label: string;
-        items: typeof bookmarkItems;
+        items: typeof discoveredPageItems;
       }
     >();
 
-    for (const bookmark of bookmarkItems) {
-      const groupKey = bookmark.rootUrl ?? '__unmatched__';
+    for (const page of discoveredPageItems) {
+      if (showBookmarkedOnly && !page.isBookmarked) {
+        continue;
+      }
+
+      const groupKey = page.rootUrl ?? '__unmatched__';
       const existing = groups.get(groupKey);
 
       if (existing) {
-        existing.items.push(bookmark);
+        existing.items.push(page);
         continue;
       }
 
       groups.set(groupKey, {
         key: groupKey,
-        label: bookmark.rootUrl ?? '未分類のURL',
-        items: [bookmark]
+        label: page.rootUrl ?? '未分類のURL',
+        items: [page]
       });
     }
 
@@ -511,14 +536,14 @@ export function OptionsApp() {
       }
       return a.label.localeCompare(b.label);
     });
-  }, [bookmarkItems]);
+  }, [discoveredPageItems, showBookmarkedOnly]);
 
   useEffect(() => {
     setCollapsedBookmarkGroups((prev) => {
       const next = { ...prev };
       let changed = false;
 
-      for (const group of bookmarkGroups) {
+      for (const group of discoveredPageGroups) {
         if (!(group.key in next)) {
           next[group.key] = true;
           changed = true;
@@ -526,7 +551,7 @@ export function OptionsApp() {
       }
 
       for (const key of Object.keys(next)) {
-        if (!bookmarkGroups.some((group) => group.key === key)) {
+        if (!discoveredPageGroups.some((group) => group.key === key)) {
           delete next[key];
           changed = true;
         }
@@ -534,7 +559,7 @@ export function OptionsApp() {
 
       return changed ? next : prev;
     });
-  }, [bookmarkGroups]);
+  }, [discoveredPageGroups]);
 
   const glyphSourceSet = useMemo(() => new Set(OKECHIKA_CHARS), []);
 
@@ -750,9 +775,15 @@ export function OptionsApp() {
     await saveRootUrls(DEFAULT_ROOT_URLS);
   }
 
-  async function handleRemoveBookmark(url: string): Promise<void> {
-    setBookmarks((prev) => prev.filter((bookmark) => bookmark.url !== url));
-    await removeBookmark(url);
+  async function handleSetBookmark(page: DiscoveredPageEntry): Promise<void> {
+    const nextIsBookmarked = await toggleBookmark(page);
+    setBookmarks((prev) => {
+      if (nextIsBookmarked) {
+        return [page, ...prev.filter((bookmark) => bookmark.url !== page.url)];
+      }
+
+      return prev.filter((bookmark) => bookmark.url !== page.url);
+    });
   }
 
   function toggleBookmarkGroup(groupKey: string): void {
@@ -1268,17 +1299,41 @@ export function OptionsApp() {
 
           <section className="panel">
             <div className="panel-header">
-              <h2>ブックマーク</h2>
+              <h2>発見済みページ</h2>
             </div>
             <p className="caption">
-              桶地下文字のあるページで追加したブックマークです。タイトルに桶地下文字が含まれる場合は変換結果も表示します。
+              対象サイト配下で到達したページを自動で記録します。重要なページは個別にブックマークできます。
             </p>
+            <div className="bookmark-filter-row">
+              <button
+                type="button"
+                className={`filter-chip${showBookmarkedOnly ? '' : ' is-active'}`}
+                onClick={() => {
+                  setShowBookmarkedOnly(false);
+                }}
+              >
+                すべて
+              </button>
+              <button
+                type="button"
+                className={`filter-chip${showBookmarkedOnly ? ' is-active' : ''}`}
+                onClick={() => {
+                  setShowBookmarkedOnly(true);
+                }}
+              >
+                ブックマークのみ
+              </button>
+            </div>
 
-            {bookmarkGroups.length === 0 ? (
-              <p className="caption">ブックマークはまだありません。</p>
+            {discoveredPageGroups.length === 0 ? (
+              <p className="caption">
+                {showBookmarkedOnly
+                  ? 'ブックマークはまだありません。'
+                  : '発見済みページはまだありません。'}
+              </p>
             ) : (
               <div className="bookmark-groups">
-                {bookmarkGroups.map((group) => {
+                {discoveredPageGroups.map((group) => {
                   const isCollapsed =
                     collapsedBookmarkGroups[group.key] ?? false;
 
@@ -1310,49 +1365,17 @@ export function OptionsApp() {
 
                       {!isCollapsed ? (
                         <ul className="bookmark-list">
-                          {group.items.map((bookmark) => (
-                            <li
-                              key={bookmark.url}
-                              className="bookmark-item bookmark-item-clickable"
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => {
-                                handleOpenBookmark(bookmark.url);
+                          {group.items.map((page) => (
+                            <BookmarkListItem
+                              key={page.url}
+                              page={page}
+                              onOpen={() => {
+                                handleOpenBookmark(page.url);
                               }}
-                              onKeyDown={(event) => {
-                                handleClickableItemKeyDown(event, () => {
-                                  handleOpenBookmark(bookmark.url);
-                                });
+                              onToggleBookmark={() => {
+                                void handleSetBookmark(page);
                               }}
-                            >
-                              <div className="bookmark-main">
-                                <div className="bookmark-titles">
-                                  <span className="bookmark-link">
-                                    {bookmark.title}
-                                  </span>
-                                  {bookmark.decodedTitle ? (
-                                    <p className="caption bookmark-decoded-title">
-                                      {bookmark.decodedTitle}
-                                    </p>
-                                  ) : null}
-                                </div>
-                                <p className="caption bookmark-url">
-                                  {bookmark.url}
-                                </p>
-                              </div>
-                              <div className="domain-item-actions">
-                                <button
-                                  type="button"
-                                  className="danger"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    void handleRemoveBookmark(bookmark.url);
-                                  }}
-                                >
-                                  削除
-                                </button>
-                              </div>
-                            </li>
+                            />
                           ))}
                         </ul>
                       ) : null}
