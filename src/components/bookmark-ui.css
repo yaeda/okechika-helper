@@ -1,0 +1,80 @@
+.bookmark-state-badge {
+  flex-shrink: 0;
+  min-width: 72px;
+  border-radius: 999px;
+  background: #fff1cf;
+  padding: 2px 8px;
+  color: #7c5f19;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.bookmark-state-badge.is-hidden {
+  visibility: hidden;
+}
+
+.bookmark-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #8b7b6c;
+  cursor: pointer;
+}
+
+.bookmark-toggle-button:hover {
+  background: transparent;
+  color: #6f6256;
+}
+
+.bookmark-toggle-button:active {
+  background: transparent;
+  color: #5f5348;
+}
+
+.bookmark-toggle-button:focus-visible {
+  outline: 2px solid rgba(185, 147, 58, 0.45);
+  outline-offset: 3px;
+  background: transparent;
+}
+
+.bookmark-toggle-button.is-bookmarked {
+  color: #f59e0b;
+}
+
+.bookmark-toggle-button.is-bookmarked:hover {
+  background: transparent;
+  color: #d97706;
+}
+
+.bookmark-toggle-button.is-bookmarked:hover svg {
+  fill: currentColor;
+}
+
+.bookmark-toggle-button.is-bookmarked:active {
+  background: transparent;
+  color: #b45309;
+}
+
+.bookmark-toggle-button svg {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+}
+
+.bookmark-toggle-button .bookmark-icon-fill {
+  opacity: 0;
+}
+
+.bookmark-toggle-button:hover .bookmark-icon-fill {
+  opacity: 0.12;
+}
+
+.bookmark-toggle-button:active .bookmark-icon-fill {
+  opacity: 0.18;
+}

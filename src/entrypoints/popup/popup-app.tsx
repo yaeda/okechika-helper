@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { KeyboardEvent } from 'react';
 
+import {
+  BookmarkListItem,
+  type BookmarkListItemData
+} from '@/components/bookmark-list-item';
 import {
   containsKnownGlyphChars,
   decodeTextWithMappings
@@ -8,37 +11,43 @@ import {
 import {
   DEFAULT_SETTINGS,
   getState,
-  removeBookmark,
-  resolveMatchedRootUrl
+  getPopupUiState,
+  resolveMatchedRootUrl,
+  setPopupUiState,
+  toggleBookmark
 } from '@/lib/storage';
 import type {
   BookmarkEntry,
   DecodeTable,
+  DiscoveredPageEntry,
   ExtensionSettings
 } from '@/lib/types';
-
-type PopupBookmarkItem = BookmarkEntry & {
-  decodedTitle: string | null;
-};
 
 export function PopupApp() {
   const [settings, setSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
+  const [discoveredPages, setDiscoveredPages] = useState<DiscoveredPageEntry[]>(
+    []
+  );
   const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>([]);
   const [activePageUrl, setActivePageUrl] = useState<string | null>(null);
+  const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load(): Promise<void> {
-      const [state, tabs] = await Promise.all([
+      const [state, popupUiState, tabs] = await Promise.all([
         getState(),
+        getPopupUiState(),
         chrome.tabs.query({ active: true, currentWindow: true })
       ]);
       const activeTabUrl = tabs[0]?.url ?? null;
       setSettings(state.settings);
       setTable(state.table);
+      setDiscoveredPages(state.discoveredPages);
       setBookmarks(state.bookmarks);
       setActivePageUrl(activeTabUrl);
+      setShowBookmarkedOnly(popupUiState.showBookmarkedOnly);
       setLoading(false);
     }
 
@@ -47,6 +56,14 @@ export function PopupApp() {
     const handler: Parameters<
       typeof chrome.storage.onChanged.addListener
     >[0] = (changes, areaName) => {
+      if (
+        areaName === 'local' &&
+        (changes.discoveredPages || changes.popupUiState)
+      ) {
+        void load();
+        return;
+      }
+
       if (areaName !== 'sync') {
         return;
       }
@@ -62,16 +79,24 @@ export function PopupApp() {
     };
   }, []);
 
-  const bookmarkItems = useMemo<PopupBookmarkItem[]>(() => {
+  const bookmarkedUrls = useMemo(
+    () => new Set(bookmarks.map((bookmark) => bookmark.url)),
+    [bookmarks]
+  );
+
+  const pageItems = useMemo<BookmarkListItemData[]>(() => {
     const mappings = table?.mappings ?? {};
 
-    return bookmarks.map((bookmark) => ({
-      ...bookmark,
-      decodedTitle: containsKnownGlyphChars(bookmark.title)
-        ? decodeTextWithMappings(bookmark.title, mappings)
-        : null
-    }));
-  }, [bookmarks, table]);
+    return discoveredPages
+      .map((page) => ({
+        ...page,
+        decodedTitle: containsKnownGlyphChars(page.title)
+          ? decodeTextWithMappings(page.title, mappings)
+          : null,
+        isBookmarked: bookmarkedUrls.has(page.url)
+      }))
+      .sort((a, b) => a.url.localeCompare(b.url));
+  }, [bookmarkedUrls, discoveredPages, table]);
 
   const activeRootUrl = useMemo(() => {
     if (!activePageUrl) {
@@ -81,18 +106,21 @@ export function PopupApp() {
     return resolveMatchedRootUrl(settings ?? DEFAULT_SETTINGS, activePageUrl);
   }, [activePageUrl, settings]);
 
-  const visibleBookmarks = useMemo(() => {
+  const visiblePages = useMemo(() => {
     if (!activeRootUrl) {
       return [];
     }
 
-    return bookmarkItems.filter((bookmark) => {
-      const bookmarkRootUrl =
-        bookmark.rootUrl ??
-        resolveMatchedRootUrl(settings ?? DEFAULT_SETTINGS, bookmark.url);
-      return bookmarkRootUrl === activeRootUrl;
+    return pageItems.filter((page) => {
+      const pageRootUrl =
+        page.rootUrl ??
+        resolveMatchedRootUrl(settings ?? DEFAULT_SETTINGS, page.url);
+      if (pageRootUrl !== activeRootUrl) {
+        return false;
+      }
+      return !showBookmarkedOnly || page.isBookmarked;
     });
-  }, [activeRootUrl, bookmarkItems, settings]);
+  }, [activeRootUrl, pageItems, settings, showBookmarkedOnly]);
 
   async function openUrl(url: string): Promise<void> {
     await chrome.tabs.create({ url });
@@ -104,21 +132,22 @@ export function PopupApp() {
     window.close();
   }
 
-  async function handleRemoveBookmark(url: string): Promise<void> {
-    setBookmarks((prev) => prev.filter((bookmark) => bookmark.url !== url));
-    await removeBookmark(url);
+  function handleSelectPopupFilter(nextShowBookmarkedOnly: boolean): void {
+    setShowBookmarkedOnly(nextShowBookmarkedOnly);
+    void setPopupUiState({
+      showBookmarkedOnly: nextShowBookmarkedOnly
+    });
   }
 
-  function handleBookmarkKeyDown(
-    event: KeyboardEvent<HTMLElement>,
-    url: string
-  ): void {
-    if (event.key !== 'Enter' && event.key !== ' ') {
-      return;
-    }
+  async function handleSetBookmark(page: DiscoveredPageEntry): Promise<void> {
+    const nextIsBookmarked = await toggleBookmark(page);
+    setBookmarks((prev) => {
+      if (nextIsBookmarked) {
+        return [page, ...prev.filter((bookmark) => bookmark.url !== page.url)];
+      }
 
-    event.preventDefault();
-    void openUrl(url);
+      return prev.filter((bookmark) => bookmark.url !== page.url);
+    });
   }
 
   return (
@@ -138,57 +167,54 @@ export function PopupApp() {
 
       <section className="popup-section">
         <header className="popup-section-header">
-          <h1>ブックマーク</h1>
-          {!loading ? <span>{visibleBookmarks.length}件</span> : null}
+          <h1>発見済みページ</h1>
+          {!loading ? <span>{visiblePages.length}件</span> : null}
         </header>
+
+        <div className="popup-filter-row">
+          <button
+            type="button"
+            className={`popup-filter-chip${showBookmarkedOnly ? '' : ' is-active'}`}
+            onClick={() => {
+              handleSelectPopupFilter(false);
+            }}
+          >
+            すべて
+          </button>
+          <button
+            type="button"
+            className={`popup-filter-chip${showBookmarkedOnly ? ' is-active' : ''}`}
+            onClick={() => {
+              handleSelectPopupFilter(true);
+            }}
+          >
+            ブックマークのみ
+          </button>
+        </div>
 
         {loading ? <p className="popup-empty">読み込み中...</p> : null}
 
-        {!loading && visibleBookmarks.length === 0 ? (
+        {!loading && visiblePages.length === 0 ? (
           <p className="popup-empty">
-            現在開いているサイトのブックマークはありません。
+            {showBookmarkedOnly
+              ? '現在開いているサイトにブックマークはありません。'
+              : '現在開いているサイトで発見済みのページはまだありません。'}
           </p>
         ) : null}
 
-        {!loading && visibleBookmarks.length > 0 ? (
-          <ul className="popup-bookmark-list">
-            {visibleBookmarks.map((bookmark) => (
-              <li key={bookmark.url}>
-                <div
-                  className="popup-bookmark-item"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    void openUrl(bookmark.url);
-                  }}
-                  onKeyDown={(event) => {
-                    handleBookmarkKeyDown(event, bookmark.url);
-                  }}
-                >
-                  <div className="popup-bookmark-main">
-                    <p className="popup-bookmark-title">{bookmark.title}</p>
-                    {bookmark.decodedTitle ? (
-                      <p className="popup-bookmark-decoded">
-                        {bookmark.decodedTitle}
-                      </p>
-                    ) : null}
-                    <p className="popup-bookmark-url">{bookmark.url}</p>
-                  </div>
-
-                  <div className="popup-bookmark-actions">
-                    <button
-                      type="button"
-                      className="popup-action-button danger"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void handleRemoveBookmark(bookmark.url);
-                      }}
-                    >
-                      削除
-                    </button>
-                  </div>
-                </div>
-              </li>
+        {!loading && visiblePages.length > 0 ? (
+          <ul className="bookmark-list popup-bookmark-list">
+            {visiblePages.map((page) => (
+              <BookmarkListItem
+                key={page.url}
+                page={page}
+                onOpen={() => {
+                  void openUrl(page.url);
+                }}
+                onToggleBookmark={() => {
+                  void handleSetBookmark(page);
+                }}
+              />
             ))}
           </ul>
         ) : null}

@@ -1,5 +1,3 @@
-import { isUnknownGlyphElement } from '@/entrypoints/content/glyph';
-
 const SOLID_BOOKMARK_ICON = `
   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     <path
@@ -24,27 +22,6 @@ export interface BookmarkButtonController {
   contains(target: EventTarget | null): boolean;
   setBookmarked(isBookmarked: boolean): void;
   setVisible(isVisible: boolean): void;
-}
-
-export function pageHasGlyphContent(root: ParentNode = document): boolean {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  let node = walker.nextNode();
-
-  while (node) {
-    if (
-      node.textContent?.trim() &&
-      isUnknownGlyphElement(node.parentElement) &&
-      !node.parentElement?.closest(
-        '#okechika-bookmark-button, #okechika-tooltip'
-      )
-    ) {
-      return true;
-    }
-
-    node = walker.nextNode();
-  }
-
-  return false;
 }
 
 export function createBookmarkButton(
