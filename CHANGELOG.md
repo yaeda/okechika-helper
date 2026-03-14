@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.7.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.6.0...v1.7.0)
+
+### 🚀 Enhancements
+
+- **bookmarks:** Add discovered pages UI and storage ([893f675](https://github.com/yaeda/okechika-helper/commit/893f675))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.6.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.5.0...v1.6.0)
