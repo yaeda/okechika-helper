@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.7.1
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.7.0...v1.7.1)
+
+### 🩹 Fixes
+
+- **bookmarks:** Backfill discovered pages from bookmarks ([1a4735e](https://github.com/yaeda/okechika-helper/commit/1a4735e))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.7.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.6.0...v1.7.0)
