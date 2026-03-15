@@ -20,6 +20,7 @@ import {
   DEFAULT_OPTIONS_UI_STATE,
   DEFAULT_ROOT_URLS,
   DEFAULT_SETTINGS,
+  getPendingExtensionUpdate,
   getOptionsUiState,
   getState,
   normalizeRootUrl,
@@ -39,7 +40,8 @@ import type {
   ExtensionSettings,
   OptionsConverterTab,
   OptionsTableDisplayMode,
-  OptionsUiState
+  OptionsUiState,
+  PendingExtensionUpdate
 } from '@/lib/types';
 
 async function hashText(input: string): Promise<string> {
@@ -337,6 +339,8 @@ export function OptionsApp() {
   const [showRootUrls, setShowRootUrls] = useState(
     DEFAULT_OPTIONS_UI_STATE.showRootUrls
   );
+  const [pendingExtensionUpdate, setPendingExtensionUpdateState] =
+    useState<PendingExtensionUpdate | null>(null);
   const [settings, setLocalSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
   const [discoveredPages, setDiscoveredPages] = useState<DiscoveredPageEntry[]>(
@@ -385,14 +389,16 @@ export function OptionsApp() {
 
   useEffect(() => {
     async function load(): Promise<void> {
-      const [state, uiState] = await Promise.all([
+      const [state, uiState, pendingUpdate] = await Promise.all([
         getState(),
-        getOptionsUiState()
+        getOptionsUiState(),
+        getPendingExtensionUpdate()
       ]);
       setLocalSettings(state.settings);
       setTable(state.table);
       setDiscoveredPages(state.discoveredPages);
       setBookmarks(state.bookmarks);
+      setPendingExtensionUpdateState(pendingUpdate);
       applyOptionsUiState(uiState);
       setLoading(false);
     }
@@ -406,7 +412,8 @@ export function OptionsApp() {
         (areaName === 'sync' &&
           (changes.decodeTable || changes.settings || changes.bookmarks)) ||
         (areaName === 'local' && changes.discoveredPages) ||
-        (areaName === 'local' && changes.optionsUiState)
+        (areaName === 'local' &&
+          (changes.optionsUiState || changes.pendingExtensionUpdate))
       ) {
         void load();
       }
@@ -733,6 +740,10 @@ export function OptionsApp() {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
+  function handleApplyPendingUpdate(): void {
+    chrome.runtime.reload();
+  }
+
   function handleToggleShowRootUrls(): void {
     const nextShowRootUrls = !showRootUrls;
     setShowRootUrls(nextShowRootUrls);
@@ -968,6 +979,26 @@ export function OptionsApp() {
                 <span className="version-badge">v{extensionVersion}</span>
               </div>
             </div>
+            {pendingExtensionUpdate ? (
+              <div className="update-available-banner update-available-banner-compact">
+                <p className="hero-sub-inline update-available-note">
+                  新しいバージョン v{pendingExtensionUpdate.version}{' '}
+                  を適用できます。
+                </p>
+                <div className="update-available-actions">
+                  <button
+                    type="button"
+                    className="secondary version-update-button"
+                    onClick={handleApplyPendingUpdate}
+                  >
+                    更新する
+                  </button>
+                  <p className="update-available-help">
+                    実行すると拡張が再起動し、この画面は閉じます。
+                  </p>
+                </div>
+              </div>
+            ) : null}
             <div className="hero-side">
               <nav className="hero-links" aria-label="サポートリンク">
                 <a

@@ -6,6 +6,7 @@ import type {
   ExtensionSettings,
   ExtensionState,
   OptionsUiState,
+  PendingExtensionUpdate,
   PopupUiState
 } from '@/lib/types';
 
@@ -15,7 +16,8 @@ const STORAGE_KEYS = {
   discoveredPages: 'discoveredPages',
   bookmarks: 'bookmarks',
   optionsUiState: 'optionsUiState',
-  popupUiState: 'popupUiState'
+  popupUiState: 'popupUiState',
+  pendingExtensionUpdate: 'pendingExtensionUpdate'
 } as const;
 
 export const DEFAULT_ROOT_URLS = [
@@ -154,6 +156,31 @@ export async function getPopupUiState(): Promise<PopupUiState> {
   };
 }
 
+export async function getPendingExtensionUpdate(): Promise<PendingExtensionUpdate | null> {
+  const result = await getLocalStorage().get(
+    STORAGE_KEYS.pendingExtensionUpdate
+  );
+  const rawPendingUpdate = result[STORAGE_KEYS.pendingExtensionUpdate] as
+    | Partial<PendingExtensionUpdate>
+    | undefined;
+
+  if (
+    !rawPendingUpdate ||
+    typeof rawPendingUpdate.version !== 'string' ||
+    rawPendingUpdate.version.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    version: rawPendingUpdate.version,
+    detectedAt:
+      typeof rawPendingUpdate.detectedAt === 'string'
+        ? rawPendingUpdate.detectedAt
+        : nowIso()
+  };
+}
+
 export async function setOptionsUiState(
   uiState: OptionsUiState
 ): Promise<void> {
@@ -165,6 +192,20 @@ export async function setOptionsUiState(
 export async function setPopupUiState(uiState: PopupUiState): Promise<void> {
   await getLocalStorage().set({
     [STORAGE_KEYS.popupUiState]: uiState satisfies PopupUiState
+  });
+}
+
+export async function setPendingExtensionUpdate(
+  update: PendingExtensionUpdate | null
+): Promise<void> {
+  if (!update) {
+    await getLocalStorage().remove(STORAGE_KEYS.pendingExtensionUpdate);
+    return;
+  }
+
+  await getLocalStorage().set({
+    [STORAGE_KEYS.pendingExtensionUpdate]:
+      update satisfies PendingExtensionUpdate
   });
 }
 

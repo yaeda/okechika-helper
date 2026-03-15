@@ -2,7 +2,13 @@ import {
   getContentScriptMatchesForPermittedOrigins,
   hasRootUrlPermission
 } from '@/lib/host-permissions';
-import { DEFAULT_SETTINGS, DEFAULT_TABLE, getState } from '@/lib/storage';
+import {
+  DEFAULT_SETTINGS,
+  DEFAULT_TABLE,
+  getPendingExtensionUpdate,
+  getState,
+  setPendingExtensionUpdate
+} from '@/lib/storage';
 
 const CONTENT_SCRIPT_ID = 'okechika-content-runtime';
 const CONTENT_SCRIPT_REGISTRATION: Omit<
@@ -26,6 +32,15 @@ async function ensureDefaults(): Promise<void> {
 
   if (!existing.settings) {
     await chrome.storage.sync.set({ settings: DEFAULT_SETTINGS });
+  }
+}
+
+async function syncPendingExtensionUpdate(): Promise<void> {
+  const currentVersion = chrome.runtime.getManifest().version;
+  const pendingUpdate = await getPendingExtensionUpdate();
+
+  if (pendingUpdate?.version === currentVersion) {
+    await setPendingExtensionUpdate(null);
   }
 }
 
@@ -97,7 +112,15 @@ function queueSyncRuntimeContentScript(): void {
 export default defineBackground(() => {
   chrome.runtime.onInstalled.addListener(() => {
     void ensureDefaults();
+    void syncPendingExtensionUpdate();
     queueSyncRuntimeContentScript();
+  });
+
+  chrome.runtime.onUpdateAvailable.addListener((details) => {
+    void setPendingExtensionUpdate({
+      version: details.version,
+      detectedAt: new Date().toISOString()
+    });
   });
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -119,5 +142,6 @@ export default defineBackground(() => {
   });
 
   void ensureDefaults();
+  void syncPendingExtensionUpdate();
   queueSyncRuntimeContentScript();
 });

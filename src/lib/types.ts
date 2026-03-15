@@ -36,6 +36,11 @@ export interface PopupUiState {
   showBookmarkedOnly: boolean;
 }
 
+export interface PendingExtensionUpdate {
+  version: string;
+  detectedAt: string;
+}
+
 export interface ExtensionState {
   table: DecodeTable;
   settings: ExtensionSettings;
