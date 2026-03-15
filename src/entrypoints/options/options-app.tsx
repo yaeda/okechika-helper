@@ -977,7 +977,14 @@ export function OptionsApp() {
                   不具合報告
                 </a>
                 <a
-                  href="https://github.com/yaeda/okechika-helper/releases"
+                  href="https://github.com/yaeda/okechika-helper/wiki/%E4%BD%BF%E3%81%84%E6%96%B9"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  使い方
+                </a>
+                <a
+                  href="https://github.com/yaeda/okechika-helper/wiki/%E6%9B%B4%E6%96%B0%E5%86%85%E5%AE%B9"
                   target="_blank"
                   rel="noreferrer"
                 >
