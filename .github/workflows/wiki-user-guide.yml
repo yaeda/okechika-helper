@@ -1,0 +1,76 @@
+name: Sync USER_GUIDE to Wiki
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-user-guide:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v6
+
+      - name: Checkout wiki repository
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Copy USER_GUIDE to wiki page
+        run: cp docs/USER_GUIDE.md "wiki/使い方.md"
+
+      - name: Check wiki diff
+        id: diff
+        run: |
+          cd wiki
+          if git diff --quiet -- "使い方.md"; then
+            {
+              echo "changed=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff -- "使い方.md" > ../wiki-user-guide.diff
+          {
+            echo "changed=true"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write wiki diff summary
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          {
+            echo "## Wiki USER_GUIDE sync"
+            echo
+            echo "Tag: \`${TAG_NAME}\`"
+            echo
+            if [ "${{ steps.diff.outputs.changed }}" != "true" ]; then
+              echo "No changes detected for \`使い方.md\`."
+            else
+              echo "### Diff"
+              echo
+              echo '```diff'
+              cat wiki-user-guide.diff
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update wiki usage page
+        if: ${{ steps.diff.outputs.changed == 'true' }}
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          cd wiki
+          git add "使い方.md"
+          git commit -m "docs: sync usage guide from ${TAG_NAME}"
+          git push origin HEAD
