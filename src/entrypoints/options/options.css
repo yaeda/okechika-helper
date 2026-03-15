@@ -390,6 +390,29 @@ button:hover {
   margin: 12px 0;
 }
 
+.bookmark-search-row {
+  margin: 0 0 12px;
+}
+
+.bookmark-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #dccca7;
+  border-radius: 10px;
+  background: #fffdfa;
+  padding: 10px 12px;
+  color: #4a3d32;
+}
+
+.bookmark-search-input::placeholder {
+  color: #9ca3af;
+}
+
+.bookmark-search-input:focus {
+  outline: 2px solid #d7b25b;
+  outline-offset: 1px;
+}
+
 .filter-chip {
   border: 1px solid #dccca7;
   border-radius: 999px;
@@ -469,6 +492,13 @@ button:hover {
   padding: 12px;
   max-height: 320px;
   overflow: auto;
+}
+
+.bookmark-group-empty {
+  margin: 0;
+  padding: 12px 14px 14px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .empty {

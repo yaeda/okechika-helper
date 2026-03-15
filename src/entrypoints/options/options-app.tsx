@@ -30,6 +30,7 @@ import {
   toCsv,
   toggleBookmark
 } from '@/lib/storage';
+import { createPageSearchMatcher } from '@/lib/page-search';
 import type {
   BookmarkEntry,
   DecodeMap,
@@ -343,6 +344,8 @@ export function OptionsApp() {
   );
   const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>([]);
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
+  const [discoveredPageSearchQuery, setDiscoveredPageSearchQuery] =
+    useState('');
   const [loading, setLoading] = useState(true);
   const [newRootUrlInput, setNewRootUrlInput] = useState('');
   const [rootUrlError, setRootUrlError] = useState('');
@@ -496,6 +499,9 @@ export function OptionsApp() {
   }, [bookmarkedUrls, discoveredPages, settings, table]);
 
   const discoveredPageGroups = useMemo(() => {
+    const matchesSearchQuery = createPageSearchMatcher(
+      discoveredPageSearchQuery
+    );
     const groups = new Map<
       string,
       {
@@ -509,19 +515,21 @@ export function OptionsApp() {
       if (showBookmarkedOnly && !page.isBookmarked) {
         continue;
       }
-
       const groupKey = page.rootUrl ?? '__unmatched__';
       const existing = groups.get(groupKey);
+      const matchesSearch = matchesSearchQuery(page);
 
       if (existing) {
-        existing.items.push(page);
+        if (matchesSearch) {
+          existing.items.push(page);
+        }
         continue;
       }
 
       groups.set(groupKey, {
         key: groupKey,
         label: page.rootUrl ?? '未分類のURL',
-        items: [page]
+        items: matchesSearch ? [page] : []
       });
     }
 
@@ -534,7 +542,7 @@ export function OptionsApp() {
       }
       return a.label.localeCompare(b.label);
     });
-  }, [discoveredPageItems, showBookmarkedOnly]);
+  }, [discoveredPageItems, discoveredPageSearchQuery, showBookmarkedOnly]);
 
   useEffect(() => {
     setCollapsedBookmarkGroups((prev) => {
@@ -544,13 +552,6 @@ export function OptionsApp() {
       for (const group of discoveredPageGroups) {
         if (!(group.key in next)) {
           next[group.key] = true;
-          changed = true;
-        }
-      }
-
-      for (const key of Object.keys(next)) {
-        if (!discoveredPageGroups.some((group) => group.key === key)) {
-          delete next[key];
           changed = true;
         }
       }
@@ -1331,12 +1332,26 @@ export function OptionsApp() {
                 ブックマークのみ
               </button>
             </div>
+            <div className="bookmark-search-row">
+              <input
+                type="search"
+                className="bookmark-search-input"
+                value={discoveredPageSearchQuery}
+                onChange={(event) => {
+                  setDiscoveredPageSearchQuery(event.target.value);
+                }}
+                placeholder="タイトル・URL で検索"
+                aria-label="発見済みページを検索"
+              />
+            </div>
 
             {discoveredPageGroups.length === 0 ? (
               <p className="caption">
-                {showBookmarkedOnly
-                  ? 'ブックマークはまだありません。'
-                  : '発見済みページはまだありません。'}
+                {discoveredPageSearchQuery
+                  ? '条件に一致するページはありません。'
+                  : showBookmarkedOnly
+                    ? 'ブックマークはまだありません。'
+                    : '発見済みページはまだありません。'}
               </p>
             ) : (
               <div className="bookmark-groups">
@@ -1371,20 +1386,26 @@ export function OptionsApp() {
                       </button>
 
                       {!isCollapsed ? (
-                        <ul className="bookmark-list">
-                          {group.items.map((page) => (
-                            <BookmarkListItem
-                              key={page.url}
-                              page={page}
-                              onOpen={() => {
-                                handleOpenBookmark(page.url);
-                              }}
-                              onToggleBookmark={() => {
-                                void handleSetBookmark(page);
-                              }}
-                            />
-                          ))}
-                        </ul>
+                        group.items.length > 0 ? (
+                          <ul className="bookmark-list">
+                            {group.items.map((page) => (
+                              <BookmarkListItem
+                                key={page.url}
+                                page={page}
+                                onOpen={() => {
+                                  handleOpenBookmark(page.url);
+                                }}
+                                onToggleBookmark={() => {
+                                  void handleSetBookmark(page);
+                                }}
+                              />
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="bookmark-group-empty">
+                            条件に一致するページはありません。
+                          </p>
+                        )
                       ) : null}
                     </section>
                   );

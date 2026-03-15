@@ -108,6 +108,29 @@ select {
   padding: 10px 14px 10px;
 }
 
+.popup-search-row {
+  padding: 0 14px 10px;
+}
+
+.popup-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #dccca7;
+  border-radius: 10px;
+  background: #fffdfa;
+  padding: 9px 11px;
+  color: #4b5563;
+}
+
+.popup-search-input::placeholder {
+  color: #9ca3af;
+}
+
+.popup-search-input:focus {
+  outline: 2px solid #d7b25b;
+  outline-offset: 1px;
+}
+
 .popup-filter-chip {
   border: 1px solid #dccca7;
   border-radius: 999px;
