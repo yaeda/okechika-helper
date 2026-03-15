@@ -1,6 +1,27 @@
 # Changelog
 
 
+## v1.8.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.7.1...v1.8.0)
+
+### 🚀 Enhancements
+
+- **ui:** Add discovered page search ([b948055](https://github.com/yaeda/okechika-helper/commit/b948055))
+
+### 🩹 Fixes
+
+- **popup:** Add spacing below filter tabs ([bc8fafe](https://github.com/yaeda/okechika-helper/commit/bc8fafe))
+
+### 📖 Documentation
+
+- **options:** Clarify 24-hour mode search guidance ([fee83bb](https://github.com/yaeda/okechika-helper/commit/fee83bb))
+- **options:** Add wiki usage guide and header links ([73a2044](https://github.com/yaeda/okechika-helper/commit/73a2044))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.7.1
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.7.0...v1.7.1)
