@@ -16,6 +16,7 @@ import {
   setPopupUiState,
   toggleBookmark
 } from '@/lib/storage';
+import { createPageSearchMatcher } from '@/lib/page-search';
 import type {
   BookmarkEntry,
   DecodeTable,
@@ -32,6 +33,7 @@ export function PopupApp() {
   const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>([]);
   const [activePageUrl, setActivePageUrl] = useState<string | null>(null);
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -111,6 +113,8 @@ export function PopupApp() {
       return [];
     }
 
+    const matchesSearchQuery = createPageSearchMatcher(searchQuery);
+
     return pageItems.filter((page) => {
       const pageRootUrl =
         page.rootUrl ??
@@ -118,9 +122,12 @@ export function PopupApp() {
       if (pageRootUrl !== activeRootUrl) {
         return false;
       }
-      return !showBookmarkedOnly || page.isBookmarked;
+      if (showBookmarkedOnly && !page.isBookmarked) {
+        return false;
+      }
+      return matchesSearchQuery(page);
     });
-  }, [activeRootUrl, pageItems, settings, showBookmarkedOnly]);
+  }, [activeRootUrl, pageItems, searchQuery, settings, showBookmarkedOnly]);
 
   async function openUrl(url: string): Promise<void> {
     await chrome.tabs.create({ url });
@@ -192,13 +199,28 @@ export function PopupApp() {
           </button>
         </div>
 
+        <div className="popup-search-row">
+          <input
+            type="search"
+            className="popup-search-input"
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+            }}
+            placeholder="タイトル・URL で検索"
+            aria-label="発見済みページを検索"
+          />
+        </div>
+
         {loading ? <p className="popup-empty">読み込み中...</p> : null}
 
         {!loading && visiblePages.length === 0 ? (
           <p className="popup-empty">
-            {showBookmarkedOnly
-              ? '現在開いているサイトにブックマークはありません。'
-              : '現在開いているサイトで発見済みのページはまだありません。'}
+            {searchQuery
+              ? '条件に一致するページはありません。'
+              : showBookmarkedOnly
+                ? '現在開いているサイトにブックマークはありません。'
+                : '現在開いているサイトで発見済みのページはまだありません。'}
           </p>
         ) : null}
 
