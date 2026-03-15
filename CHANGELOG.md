@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.9.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.8.0...v1.9.0)
+
+### 🚀 Enhancements
+
+- **options:** Add update apply banner ([817c07c](https://github.com/yaeda/okechika-helper/commit/817c07c))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.8.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.7.1...v1.8.0)
