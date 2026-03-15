@@ -1,7 +1,5 @@
+import type { ChangeEvent, KeyboardEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
-import type { KeyboardEvent } from 'react';
-import type { ReactNode } from 'react';
 
 import {
   BookmarkListItem,
@@ -11,27 +9,27 @@ import {
   containsKnownGlyphChars,
   decodeTextWithMappings
 } from '@/lib/conversion';
-import {
-  DEFAULT_OPTIONS_UI_STATE,
-  DEFAULT_SETTINGS,
-  DEFAULT_ROOT_URLS,
-  getState,
-  getOptionsUiState,
-  normalizeRootUrl,
-  resolveMatchedRootUrl,
-  setMappings,
-  setOptionsUiState,
-  setSettings,
-  toggleBookmark,
-  toCsv
-} from '@/lib/storage';
-import { openSearchPage, shouldUsePostSearch } from '@/lib/search';
 import { requestRootUrlPermission } from '@/lib/host-permissions';
 import {
   OKECHIKA_CHARS,
   OKECHIKA_NUMBER_CHARS,
   OKECHIKA_TEXT_CHARS
 } from '@/lib/okechika-chars';
+import { openSearchPage, shouldUsePostSearch } from '@/lib/search';
+import {
+  DEFAULT_OPTIONS_UI_STATE,
+  DEFAULT_ROOT_URLS,
+  DEFAULT_SETTINGS,
+  getOptionsUiState,
+  getState,
+  normalizeRootUrl,
+  resolveMatchedRootUrl,
+  setMappings,
+  setOptionsUiState,
+  setSettings,
+  toCsv,
+  toggleBookmark
+} from '@/lib/storage';
 import type {
   BookmarkEntry,
   DecodeMap,
@@ -1091,8 +1089,7 @@ export function OptionsApp() {
               <h2>各種設定</h2>
             </div>
             <p className="caption">
-              桶地下サイト向けの追加機能と、tooltip
-              検索の開き方を切り替えできます。
+              桶地下サイト向けの追加機能と、ツールチップの検索ボタンの開き方を切り替えできます。
             </p>
 
             <label className="subtle-setting-card">
@@ -1109,6 +1106,9 @@ export function OptionsApp() {
                 <span>桶地下サイトを24時間営業にする</span>
               </span>
               <p className="caption">
+                サイト内の検索機能ではなく、拡張が提供するツールチップや相互変換パネルの検索ボタンが時間制限なく利用できます。
+              </p>
+              <p className="caption">
                 この設定は世界観を損なうおそれがあります。ご利用の際はあらかじめご了承ください。
               </p>
             </label>
@@ -1124,7 +1124,7 @@ export function OptionsApp() {
                     );
                   }}
                 />
-                <span>tooltip検索を別タブで開く</span>
+                <span>ツールチップの検索ボタンを別タブで開く</span>
               </span>
               <p className="caption">
                 OFF の場合は現在のタブで遷移し、ON
