@@ -10,7 +10,7 @@ export default defineConfig({
       default_title: '桶地下 Helper',
       default_popup: 'popup.html'
     },
-    permissions: ['storage', 'scripting'],
+    permissions: ['favicon', 'storage', 'scripting'],
     host_permissions: [
       'https://www.pub-riddle.com/*',
       'https://pub-riddle.com/*',

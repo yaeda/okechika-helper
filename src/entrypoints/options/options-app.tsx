@@ -233,11 +233,29 @@ function maskRootUrl(value: string): string {
   }
 }
 
+function getFaviconUrl(pageUrl: string): string {
+  const faviconUrl = new URL(chrome.runtime.getURL('/_favicon/'));
+  faviconUrl.searchParams.set('pageUrl', pageUrl);
+  faviconUrl.searchParams.set('size', '24');
+  return faviconUrl.toString();
+}
+
 function joinClassNames(
   ...names: Array<string | undefined>
 ): string | undefined {
   const filtered = names.filter(Boolean);
   return filtered.length > 0 ? filtered.join(' ') : undefined;
+}
+
+function RootUrlFavicon({ rootUrl }: { rootUrl: string }) {
+  return (
+    <img
+      className="domain-item-favicon-image"
+      src={getFaviconUrl(rootUrl)}
+      alt=""
+      aria-hidden="true"
+    />
+  );
 }
 
 function tokenizeByLongestTargets(text: string, targets: string[]): string[] {
@@ -1104,7 +1122,14 @@ export function OptionsApp() {
                       });
                     }}
                   >
-                    <span>{showRootUrls ? rootUrl : maskRootUrl(rootUrl)}</span>
+                    <div className="domain-item-main">
+                      <span className="domain-item-favicon">
+                        <RootUrlFavicon rootUrl={rootUrl} />
+                      </span>
+                      <span>
+                        {showRootUrls ? rootUrl : maskRootUrl(rootUrl)}
+                      </span>
+                    </div>
                     <div className="domain-item-actions">
                       <button
                         type="button"
