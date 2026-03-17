@@ -27,8 +27,17 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Copy USER_GUIDE to wiki page
-        run: cp docs/USER_GUIDE.md "wiki/使い方.md"
+      - name: Render wiki usage page
+        run: |
+          cat <<'EOF' > "wiki/使い方.md"
+          <!--
+          このページは docs/USER_GUIDE.md から自動同期されます。
+          wiki 側で直接更新した内容は次回リリース時に上書きされます。
+          使い方を更新したときはリポジトリの docs/USER_GUIDE.md も更新してください。
+          -->
+
+          EOF
+          cat docs/USER_GUIDE.md >> "wiki/使い方.md"
 
       - name: Check wiki diff
         id: diff
@@ -57,6 +66,8 @@ jobs:
             if [ "${{ steps.diff.outputs.changed }}" != "true" ]; then
               echo "No changes detected for \`使い方.md\`."
             else
+              echo "Updated \`使い方.md\` from \`docs/USER_GUIDE.md\`."
+              echo
               echo "### Diff"
               echo
               echo '```diff'
