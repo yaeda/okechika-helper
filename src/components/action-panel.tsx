@@ -8,15 +8,15 @@ import {
   containsKnownGlyphChars,
   decodeTextWithMappings
 } from '@/lib/conversion';
+import { createPageSearchMatcher } from '@/lib/page-search';
 import {
   DEFAULT_SETTINGS,
-  getState,
   getPopupUiState,
+  getState,
   resolveMatchedRootUrl,
   setPopupUiState,
   toggleBookmark
 } from '@/lib/storage';
-import { createPageSearchMatcher } from '@/lib/page-search';
 import type {
   BookmarkEntry,
   DecodeTable,
@@ -24,7 +24,9 @@ import type {
   ExtensionSettings
 } from '@/lib/types';
 
-export function PopupApp() {
+export type ActionPanelMode = 'popup' | 'sidepanel';
+
+export function ActionPanel({ mode = 'popup' }: { mode?: ActionPanelMode }) {
   const [settings, setSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
   const [discoveredPages, setDiscoveredPages] = useState<DiscoveredPageEntry[]>(
@@ -86,7 +88,9 @@ export function PopupApp() {
     [bookmarks]
   );
 
-  const pageItems = useMemo<BookmarkListItemData[]>(() => {
+  const pageItems = useMemo<
+    Array<BookmarkListItemData & DiscoveredPageEntry>
+  >(() => {
     const mappings = table?.mappings ?? {};
 
     return discoveredPages
@@ -131,12 +135,16 @@ export function PopupApp() {
 
   async function openUrl(url: string): Promise<void> {
     await chrome.tabs.create({ url });
-    window.close();
+    if (mode === 'popup') {
+      window.close();
+    }
   }
 
   async function handleOpenOptions(): Promise<void> {
     await chrome.runtime.openOptionsPage();
-    window.close();
+    if (mode === 'popup') {
+      window.close();
+    }
   }
 
   function handleSelectPopupFilter(nextShowBookmarkedOnly: boolean): void {
@@ -158,30 +166,32 @@ export function PopupApp() {
   }
 
   return (
-    <main className="popup-shell">
+    <main
+      className={`action-panel-shell${mode === 'sidepanel' ? ' is-sidepanel' : ''}`}
+    >
       <button
         type="button"
-        className="popup-settings-link"
+        className="action-panel-settings-link"
         onClick={() => {
           void handleOpenOptions();
         }}
       >
         <span>設定を開く</span>
-        <span className="popup-chevron" aria-hidden="true">
+        <span className="action-panel-chevron" aria-hidden="true">
           ›
         </span>
       </button>
 
-      <section className="popup-section">
-        <header className="popup-section-header">
+      <section className="action-panel-section">
+        <header className="action-panel-section-header">
           <h1>発見済みページ</h1>
           {!loading ? <span>{visiblePages.length}件</span> : null}
         </header>
 
-        <div className="popup-filter-row">
+        <div className="action-panel-filter-row">
           <button
             type="button"
-            className={`popup-filter-chip${showBookmarkedOnly ? '' : ' is-active'}`}
+            className={`action-panel-filter-chip${showBookmarkedOnly ? '' : ' is-active'}`}
             onClick={() => {
               handleSelectPopupFilter(false);
             }}
@@ -190,7 +200,7 @@ export function PopupApp() {
           </button>
           <button
             type="button"
-            className={`popup-filter-chip${showBookmarkedOnly ? ' is-active' : ''}`}
+            className={`action-panel-filter-chip${showBookmarkedOnly ? ' is-active' : ''}`}
             onClick={() => {
               handleSelectPopupFilter(true);
             }}
@@ -199,10 +209,10 @@ export function PopupApp() {
           </button>
         </div>
 
-        <div className="popup-search-row">
+        <div className="action-panel-search-row">
           <input
             type="search"
-            className="popup-search-input"
+            className="action-panel-search-input"
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
@@ -212,10 +222,10 @@ export function PopupApp() {
           />
         </div>
 
-        {loading ? <p className="popup-empty">読み込み中...</p> : null}
+        {loading ? <p className="action-panel-empty">読み込み中...</p> : null}
 
         {!loading && visiblePages.length === 0 ? (
-          <p className="popup-empty">
+          <p className="action-panel-empty">
             {searchQuery
               ? '条件に一致するページはありません。'
               : showBookmarkedOnly
@@ -225,7 +235,7 @@ export function PopupApp() {
         ) : null}
 
         {!loading && visiblePages.length > 0 ? (
-          <ul className="bookmark-list popup-bookmark-list">
+          <ul className="bookmark-list action-panel-bookmark-list">
             {visiblePages.map((page) => (
               <BookmarkListItem
                 key={page.url}

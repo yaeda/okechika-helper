@@ -14,8 +14,10 @@ import {
 } from '@/entrypoints/content/annotation';
 import {
   createBookmarkButton,
-  type BookmarkButtonController
-} from '@/entrypoints/content/bookmark-ui';
+  createSidePanelButton,
+  type BookmarkButtonController,
+  type PageActionButtonController
+} from '@/entrypoints/content/page-action-buttons';
 import {
   getSelectionForUnknownGlyph,
   isTranslatableGlyphChar
@@ -46,6 +48,7 @@ function decodeSelectedText(text: string): string {
 
 async function syncPageStatus(
   bookmarkButton: BookmarkButtonController,
+  sidePanelButton: PageActionButtonController,
   state?: Awaited<ReturnType<typeof getState>>
 ): Promise<boolean> {
   const nextState = state ?? (await getState());
@@ -74,20 +77,26 @@ async function syncPageStatus(
 
   bookmarkButton.setBookmarked(isBookmarked);
   bookmarkButton.setVisible(nextIsActive);
+  sidePanelButton.setVisible(nextIsActive);
   return nextIsActive;
 }
 
 async function refreshActivation(
   tooltip: Pick<TooltipUi, 'hide'>,
   annotation: AnnotationController,
-  bookmarkButton: BookmarkButtonController
+  bookmarkButton: BookmarkButtonController,
+  sidePanelButton: PageActionButtonController
 ): Promise<void> {
   const state = await getState();
   currentMappings = state.table.mappings;
   annotation.setMappings(currentMappings);
   currentTooltipSearchOpenInNewTab = state.settings.tooltipSearchOpenInNewTab;
   currentOkck24HourModeEnabled = state.settings.enableOkck24HourMode;
-  const nextIsActive = await syncPageStatus(bookmarkButton, state);
+  const nextIsActive = await syncPageStatus(
+    bookmarkButton,
+    sidePanelButton,
+    state
+  );
 
   if (nextIsActive === isActive) {
     if (isActive) {
@@ -103,23 +112,25 @@ async function refreshActivation(
     tooltip.hide();
     annotation.clearAnnotations();
     bookmarkButton.setVisible(false);
+    sidePanelButton.setVisible(false);
     observer?.disconnect();
     return;
   }
 
   annotation.annotateDocument();
-  observeDomChanges(annotation, bookmarkButton);
+  observeDomChanges(annotation, bookmarkButton, sidePanelButton);
 }
 
 function observeDomChanges(
   annotation: AnnotationController,
-  bookmarkButton: BookmarkButtonController
+  bookmarkButton: BookmarkButtonController,
+  sidePanelButton: PageActionButtonController
 ): void {
   observer?.disconnect();
 
   observer = new MutationObserver(() => {
     annotation.annotateDocument();
-    void syncPageStatus(bookmarkButton);
+    void syncPageStatus(bookmarkButton, sidePanelButton);
   });
 
   observer.observe(document.body, {
@@ -146,6 +157,9 @@ export default defineContentScript({
       });
       bookmarkButton.setBookmarked(nextState);
     });
+    const sidePanelButton = createSidePanelButton(async () => {
+      await chrome.runtime.sendMessage({ type: 'open-side-panel-for-tab' });
+    });
 
     const tooltip = createTooltipUi(
       ctx,
@@ -170,7 +184,12 @@ export default defineContentScript({
       () => currentOkck24HourModeEnabled
     );
 
-    void refreshActivation(tooltip, annotation, bookmarkButton);
+    void refreshActivation(
+      tooltip,
+      annotation,
+      bookmarkButton,
+      sidePanelButton
+    );
 
     const handleSelection = () => {
       if (!isActive) {
@@ -189,7 +208,8 @@ export default defineContentScript({
     document.addEventListener('mouseup', (event) => {
       if (
         tooltip.contains(event.target) ||
-        bookmarkButton.contains(event.target)
+        bookmarkButton.contains(event.target) ||
+        sidePanelButton.contains(event.target)
       ) {
         return;
       }
@@ -209,7 +229,12 @@ export default defineContentScript({
       }
 
       if (changes.decodeTable || changes.settings || changes.bookmarks) {
-        void refreshActivation(tooltip, annotation, bookmarkButton);
+        void refreshActivation(
+          tooltip,
+          annotation,
+          bookmarkButton,
+          sidePanelButton
+        );
       }
     });
   }

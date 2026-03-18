@@ -15,13 +15,14 @@ import {
   OKECHIKA_NUMBER_CHARS,
   OKECHIKA_TEXT_CHARS
 } from '@/lib/okechika-chars';
+import { createPageSearchMatcher } from '@/lib/page-search';
 import { openSearchPage, shouldUsePostSearch } from '@/lib/search';
 import {
   DEFAULT_OPTIONS_UI_STATE,
   DEFAULT_ROOT_URLS,
   DEFAULT_SETTINGS,
-  getPendingExtensionUpdate,
   getOptionsUiState,
+  getPendingExtensionUpdate,
   getState,
   normalizeRootUrl,
   resolveMatchedRootUrl,
@@ -31,7 +32,6 @@ import {
   toCsv,
   toggleBookmark
 } from '@/lib/storage';
-import { createPageSearchMatcher } from '@/lib/page-search';
 import type {
   BookmarkEntry,
   DecodeMap,
@@ -788,6 +788,10 @@ export function OptionsApp() {
   }
 
   function handleSearchOfficialSite(query: string): void {
+    if (!settings) {
+      return;
+    }
+
     const rootUrl = 'https://www.qtes9gu0k.xyz/';
     openSearchPage({
       rootUrl,

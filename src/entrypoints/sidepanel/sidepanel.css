@@ -1,11 +1,13 @@
 @import '../../components/action-panel.css';
 
-body {
-  margin: 0;
-  min-width: 360px;
-  background: transparent;
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
-#root {
-  min-height: 100vh;
+body {
+  margin: 0;
+  min-width: 0;
+  background: transparent;
 }

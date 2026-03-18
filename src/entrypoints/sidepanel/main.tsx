@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { ActionPanel } from '@/components/action-panel';
-import '@/entrypoints/popup/popup.css';
+import '@/entrypoints/sidepanel/sidepanel.css';
 
 const container = document.getElementById('root');
 if (!container) {
@@ -11,6 +11,6 @@ if (!container) {
 
 createRoot(container).render(
   <React.StrictMode>
-    <ActionPanel />
+    <ActionPanel mode="sidepanel" />
   </React.StrictMode>
 );

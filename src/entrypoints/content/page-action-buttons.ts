@@ -18,10 +18,36 @@ const OUTLINE_BOOKMARK_ICON = `
   </svg>
 `;
 
+const SIDE_PANEL_ICON = `
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M4.5 5.25A2.25 2.25 0 0 1 6.75 3h10.5a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 17.25 21H6.75A2.25 2.25 0 0 1 4.5 18.75V5.25Zm2.25-.75A.75.75 0 0 0 6 5.25v13.5c0 .414.336.75.75.75h2.25V4.5H6.75Zm3.75 15h6.75a.75.75 0 0 0 .75-.75V5.25a.75.75 0 0 0-.75-.75H10.5v15Z" />
+  </svg>
+`;
+
 export interface BookmarkButtonController {
   contains(target: EventTarget | null): boolean;
   setBookmarked(isBookmarked: boolean): void;
   setVisible(isVisible: boolean): void;
+}
+
+export interface PageActionButtonController {
+  contains(target: EventTarget | null): boolean;
+  setVisible(isVisible: boolean): void;
+}
+
+function getActionButtonHost(): HTMLDivElement {
+  let host = document.getElementById(
+    'okechika-page-action-buttons'
+  ) as HTMLDivElement | null;
+
+  if (host) {
+    return host;
+  }
+
+  host = document.createElement('div');
+  host.id = 'okechika-page-action-buttons';
+  document.documentElement.append(host);
+  return host;
 }
 
 export function createBookmarkButton(
@@ -38,7 +64,7 @@ export function createBookmarkButton(
     void onClick();
   });
 
-  document.documentElement.append(button);
+  getActionButtonHost().append(button);
 
   return {
     contains(target) {
@@ -53,6 +79,32 @@ export function createBookmarkButton(
       button.innerHTML = isBookmarked
         ? SOLID_BOOKMARK_ICON
         : OUTLINE_BOOKMARK_ICON;
+    },
+    setVisible(isVisible) {
+      button.classList.toggle('is-hidden', !isVisible);
+    }
+  };
+}
+
+export function createSidePanelButton(
+  onClick: () => void | Promise<void>
+): PageActionButtonController {
+  const button = document.createElement('button');
+  button.id = 'okechika-sidepanel-button';
+  button.type = 'button';
+  button.className = 'is-hidden';
+  button.setAttribute('aria-label', 'サイドパネルを開閉');
+  button.innerHTML = SIDE_PANEL_ICON;
+
+  button.addEventListener('click', () => {
+    void onClick();
+  });
+
+  getActionButtonHost().append(button);
+
+  return {
+    contains(target) {
+      return button.contains(target as Node | null);
     },
     setVisible(isVisible) {
       button.classList.toggle('is-hidden', !isVisible);
