@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { ActionPanel } from '@/components/action-panel';
+import { ActionPanel, ActionSurface } from '@/components/action-panel';
 import '@/entrypoints/popup/popup.css';
+
+function PopupApp() {
+  const [isDiscoveredPanelExpanded, setIsDiscoveredPanelExpanded] =
+    useState(true);
+
+  return (
+    <ActionSurface>
+      <ActionPanel
+        expanded={isDiscoveredPanelExpanded}
+        onToggle={() => {
+          setIsDiscoveredPanelExpanded((prev) => !prev);
+        }}
+      />
+    </ActionSurface>
+  );
+}
 
 const container = document.getElementById('root');
 if (!container) {
@@ -11,6 +27,6 @@ if (!container) {
 
 createRoot(container).render(
   <React.StrictMode>
-    <ActionPanel />
+    <PopupApp />
   </React.StrictMode>
 );

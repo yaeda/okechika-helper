@@ -22,13 +22,13 @@ export interface ExtensionSettings {
   tooltipSearchOpenInNewTab: boolean;
 }
 
-export type OptionsConverterTab = 'glyphToText' | 'textToGlyph';
+export type ConverterTab = 'glyphToText' | 'textToGlyph';
 
 export type OptionsTableDisplayMode = 'source' | 'target' | 'both';
 
 export interface OptionsUiState {
   showRootUrls: boolean;
-  converterTab: OptionsConverterTab;
+  converterTab: ConverterTab;
   tableDisplayMode: OptionsTableDisplayMode;
 }
 

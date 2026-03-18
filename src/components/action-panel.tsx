@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 
 import {
   BookmarkListItem,
@@ -26,7 +27,102 @@ import type {
 
 export type ActionPanelMode = 'popup' | 'sidepanel';
 
-export function ActionPanel({ mode = 'popup' }: { mode?: ActionPanelMode }) {
+export function ActionAccordionSection({
+  title,
+  meta,
+  expanded,
+  onToggle,
+  bodyClassName,
+  children
+}: {
+  title: string;
+  meta?: ReactNode;
+  expanded: boolean;
+  onToggle: () => void;
+  bodyClassName?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      className={`action-panel-section${expanded ? '' : ' is-collapsed'}`}
+    >
+      <button
+        type="button"
+        className="action-panel-section-toggle"
+        aria-expanded={expanded}
+        onClick={onToggle}
+      >
+        <span className="action-panel-section-heading">{title}</span>
+        <span className="action-panel-section-toggle-side">
+          {meta ? (
+            <span className="action-panel-section-meta">{meta}</span>
+          ) : null}
+          <span
+            className={`action-panel-chevron action-panel-section-caret${expanded ? ' is-expanded' : ''}`}
+            aria-hidden="true"
+          >
+            ›
+          </span>
+        </span>
+      </button>
+
+      <div
+        className={`action-panel-section-body${expanded ? '' : ' is-collapsed'}`}
+        aria-hidden={!expanded}
+      >
+        <div className={bodyClassName ?? 'action-panel-section-body-inner'}>
+          {children}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function ActionSurface({
+  mode = 'popup',
+  children
+}: {
+  mode?: ActionPanelMode;
+  children: ReactNode;
+}) {
+  async function handleOpenOptions(): Promise<void> {
+    await chrome.runtime.openOptionsPage();
+    if (mode === 'popup') {
+      window.close();
+    }
+  }
+
+  return (
+    <main
+      className={`action-panel-shell${mode === 'sidepanel' ? ' is-sidepanel' : ''}`}
+    >
+      <button
+        type="button"
+        className="action-panel-settings-link"
+        onClick={() => {
+          void handleOpenOptions();
+        }}
+      >
+        <span>設定を開く</span>
+        <span className="action-panel-chevron" aria-hidden="true">
+          ›
+        </span>
+      </button>
+
+      {children}
+    </main>
+  );
+}
+
+export function ActionPanel({
+  mode = 'popup',
+  expanded,
+  onToggle
+}: {
+  mode?: ActionPanelMode;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   const [settings, setSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
   const [discoveredPages, setDiscoveredPages] = useState<DiscoveredPageEntry[]>(
@@ -140,13 +236,6 @@ export function ActionPanel({ mode = 'popup' }: { mode?: ActionPanelMode }) {
     }
   }
 
-  async function handleOpenOptions(): Promise<void> {
-    await chrome.runtime.openOptionsPage();
-    if (mode === 'popup') {
-      window.close();
-    }
-  }
-
   function handleSelectPopupFilter(nextShowBookmarkedOnly: boolean): void {
     setShowBookmarkedOnly(nextShowBookmarkedOnly);
     void setPopupUiState({
@@ -166,91 +255,75 @@ export function ActionPanel({ mode = 'popup' }: { mode?: ActionPanelMode }) {
   }
 
   return (
-    <main
-      className={`action-panel-shell${mode === 'sidepanel' ? ' is-sidepanel' : ''}`}
+    <ActionAccordionSection
+      title="発見済みページ"
+      meta={!loading ? `${visiblePages.length}件` : undefined}
+      expanded={expanded}
+      onToggle={onToggle}
+      bodyClassName="action-panel-section-body-inner action-panel-bookmarks-body"
     >
-      <button
-        type="button"
-        className="action-panel-settings-link"
-        onClick={() => {
-          void handleOpenOptions();
-        }}
-      >
-        <span>設定を開く</span>
-        <span className="action-panel-chevron" aria-hidden="true">
-          ›
-        </span>
-      </button>
+      <div className="action-panel-filter-row">
+        <button
+          type="button"
+          className={`action-panel-filter-chip${showBookmarkedOnly ? '' : ' is-active'}`}
+          onClick={() => {
+            handleSelectPopupFilter(false);
+          }}
+        >
+          すべて
+        </button>
+        <button
+          type="button"
+          className={`action-panel-filter-chip${showBookmarkedOnly ? ' is-active' : ''}`}
+          onClick={() => {
+            handleSelectPopupFilter(true);
+          }}
+        >
+          ブックマークのみ
+        </button>
+      </div>
 
-      <section className="action-panel-section">
-        <header className="action-panel-section-header">
-          <h1>発見済みページ</h1>
-          {!loading ? <span>{visiblePages.length}件</span> : null}
-        </header>
+      <div className="action-panel-search-row">
+        <input
+          type="search"
+          className="action-panel-search-input"
+          value={searchQuery}
+          onChange={(event) => {
+            setSearchQuery(event.target.value);
+          }}
+          placeholder="タイトル・URL で検索"
+          aria-label="発見済みページを検索"
+        />
+      </div>
 
-        <div className="action-panel-filter-row">
-          <button
-            type="button"
-            className={`action-panel-filter-chip${showBookmarkedOnly ? '' : ' is-active'}`}
-            onClick={() => {
-              handleSelectPopupFilter(false);
-            }}
-          >
-            すべて
-          </button>
-          <button
-            type="button"
-            className={`action-panel-filter-chip${showBookmarkedOnly ? ' is-active' : ''}`}
-            onClick={() => {
-              handleSelectPopupFilter(true);
-            }}
-          >
-            ブックマークのみ
-          </button>
-        </div>
+      {loading ? <p className="action-panel-empty">読み込み中...</p> : null}
 
-        <div className="action-panel-search-row">
-          <input
-            type="search"
-            className="action-panel-search-input"
-            value={searchQuery}
-            onChange={(event) => {
-              setSearchQuery(event.target.value);
-            }}
-            placeholder="タイトル・URL で検索"
-            aria-label="発見済みページを検索"
-          />
-        </div>
+      {!loading && visiblePages.length === 0 ? (
+        <p className="action-panel-empty">
+          {searchQuery
+            ? '条件に一致するページはありません。'
+            : showBookmarkedOnly
+              ? '現在開いているサイトにブックマークはありません。'
+              : '現在開いているサイトで発見済みのページはまだありません。'}
+        </p>
+      ) : null}
 
-        {loading ? <p className="action-panel-empty">読み込み中...</p> : null}
-
-        {!loading && visiblePages.length === 0 ? (
-          <p className="action-panel-empty">
-            {searchQuery
-              ? '条件に一致するページはありません。'
-              : showBookmarkedOnly
-                ? '現在開いているサイトにブックマークはありません。'
-                : '現在開いているサイトで発見済みのページはまだありません。'}
-          </p>
-        ) : null}
-
-        {!loading && visiblePages.length > 0 ? (
-          <ul className="bookmark-list action-panel-bookmark-list">
-            {visiblePages.map((page) => (
-              <BookmarkListItem
-                key={page.url}
-                page={page}
-                onOpen={() => {
-                  void openUrl(page.url);
-                }}
-                onToggleBookmark={() => {
-                  void handleSetBookmark(page);
-                }}
-              />
-            ))}
-          </ul>
-        ) : null}
-      </section>
-    </main>
+      {!loading && visiblePages.length > 0 ? (
+        <ul className="bookmark-list action-panel-bookmark-list">
+          {visiblePages.map((page) => (
+            <BookmarkListItem
+              key={page.url}
+              page={page}
+              onOpen={() => {
+                void openUrl(page.url);
+              }}
+              onToggleBookmark={() => {
+                void handleSetBookmark(page);
+              }}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </ActionAccordionSection>
   );
 }

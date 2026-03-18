@@ -1,6 +1,7 @@
 import type { ChangeEvent, KeyboardEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { ConverterPanel } from '@/components/converter-panel';
 import {
   BookmarkListItem,
   type BookmarkListItemData
@@ -16,7 +17,6 @@ import {
   OKECHIKA_TEXT_CHARS
 } from '@/lib/okechika-chars';
 import { createPageSearchMatcher } from '@/lib/page-search';
-import { openSearchPage, shouldUsePostSearch } from '@/lib/search';
 import {
   DEFAULT_OPTIONS_UI_STATE,
   DEFAULT_ROOT_URLS,
@@ -34,11 +34,11 @@ import {
 } from '@/lib/storage';
 import type {
   BookmarkEntry,
+  ConverterTab,
   DecodeMap,
   DecodeTable,
   DiscoveredPageEntry,
   ExtensionSettings,
-  OptionsConverterTab,
   OptionsTableDisplayMode,
   OptionsUiState,
   PendingExtensionUpdate
@@ -258,28 +258,6 @@ function RootUrlFavicon({ rootUrl }: { rootUrl: string }) {
   );
 }
 
-function tokenizeByLongestTargets(text: string, targets: string[]): string[] {
-  const tokens: string[] = [];
-  let index = 0;
-
-  while (index < text.length) {
-    const matched = targets.find((target) => text.startsWith(target, index));
-    if (matched) {
-      tokens.push(matched);
-      index += matched.length;
-      continue;
-    }
-
-    const char = text[index];
-    if (char) {
-      tokens.push(char);
-    }
-    index += 1;
-  }
-
-  return tokens;
-}
-
 function ScrollableTableWrap({
   children,
   className
@@ -379,12 +357,7 @@ export function OptionsApp() {
     draft: string;
     cellKey: string;
   } | null>(null);
-  const [glyphToTextInput, setGlyphToTextInput] = useState('');
-  const [textToGlyphInput, setTextToGlyphInput] = useState('');
-  const [textToGlyphSelected, setTextToGlyphSelected] = useState<string[]>([]);
-  const [converterMessage, setConverterMessage] = useState('');
-  const [converterError, setConverterError] = useState('');
-  const [converterTab, setConverterTab] = useState<OptionsConverterTab>(
+  const [converterTab, setConverterTab] = useState<ConverterTab>(
     DEFAULT_OPTIONS_UI_STATE.converterTab
   );
   const [collapsedBookmarkGroups, setCollapsedBookmarkGroups] = useState<
@@ -585,69 +558,6 @@ export function OptionsApp() {
     });
   }, [discoveredPageGroups]);
 
-  const glyphSourceSet = useMemo(() => new Set(OKECHIKA_CHARS), []);
-
-  const glyphToTextOutput = useMemo(() => {
-    const mappings = table?.mappings ?? {};
-    return Array.from(glyphToTextInput)
-      .map((char) => {
-        const mapped = mappings[char];
-        if (mapped) {
-          return mapped;
-        }
-        return glyphSourceSet.has(char) ? '?' : char;
-      })
-      .join('');
-  }, [glyphToTextInput, glyphSourceSet, table]);
-
-  const textToGlyphSegments = useMemo(() => {
-    const mappings = table?.mappings ?? {};
-    const reverseMap = new Map<string, string[]>();
-    Object.entries(mappings).forEach(([source, target]) => {
-      if (!target) {
-        return;
-      }
-      const existing = reverseMap.get(target);
-      if (existing) {
-        existing.push(source);
-        return;
-      }
-      reverseMap.set(target, [source]);
-    });
-    for (const candidates of reverseMap.values()) {
-      candidates.sort((a, b) => a.localeCompare(b));
-    }
-
-    const targets = Array.from(reverseMap.keys()).sort(
-      (a, b) => b.length - a.length
-    );
-    const tokens = tokenizeByLongestTargets(textToGlyphInput, targets);
-    return tokens.map((token) => ({
-      token,
-      candidates: reverseMap.get(token) ?? []
-    }));
-  }, [table, textToGlyphInput]);
-
-  useEffect(() => {
-    setTextToGlyphSelected((prev) =>
-      textToGlyphSegments.map((segment, index) => {
-        const previous = prev[index];
-        if (previous && segment.candidates.includes(previous)) {
-          return previous;
-        }
-        return segment.candidates[0] ?? '';
-      })
-    );
-  }, [textToGlyphSegments]);
-
-  const textToGlyphOutput = useMemo(
-    () =>
-      textToGlyphSegments
-        .map((segment, index) => textToGlyphSelected[index] || segment.token)
-        .join(''),
-    [textToGlyphSegments, textToGlyphSelected]
-  );
-
   const optionsUiState: OptionsUiState = {
     showRootUrls,
     converterTab,
@@ -771,7 +681,7 @@ export function OptionsApp() {
     });
   }
 
-  function handleSelectConverterTab(nextTab: OptionsConverterTab): void {
+  function handleSelectConverterTab(nextTab: ConverterTab): void {
     setConverterTab(nextTab);
     void saveOptionsPanelState({
       ...optionsUiState,
@@ -784,20 +694,6 @@ export function OptionsApp() {
     void saveOptionsPanelState({
       ...optionsUiState,
       tableDisplayMode: nextMode
-    });
-  }
-
-  function handleSearchOfficialSite(query: string): void {
-    if (!settings) {
-      return;
-    }
-
-    const rootUrl = 'https://www.qtes9gu0k.xyz/';
-    openSearchPage({
-      rootUrl,
-      query,
-      openInNewTab: true,
-      usePost: shouldUsePostSearch(rootUrl, settings.enableOkck24HourMode)
     });
   }
 
@@ -850,20 +746,6 @@ export function OptionsApp() {
       );
     } finally {
       event.currentTarget.value = '';
-    }
-  }
-
-  async function handleCopyConverterResult(
-    value: string,
-    successMessage: string
-  ): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(value);
-      setConverterError('');
-      setConverterMessage(successMessage);
-    } catch {
-      setConverterMessage('');
-      setConverterError('コピーに失敗しました。');
     }
   }
 
@@ -1210,159 +1092,15 @@ export function OptionsApp() {
             <p className="caption">
               桶地下文字から日本語、日本語から桶地下文字へ変換できます。日本語→桶地下は候補から選択できます。
             </p>
-            {converterMessage ? (
-              <p className="caption success">{converterMessage}</p>
-            ) : null}
-            {converterError ? (
-              <p className="caption error">{converterError}</p>
-            ) : null}
-
-            <div className="converter-tab-group">
-              <button
-                type="button"
-                className={
-                  converterTab === 'textToGlyph'
-                    ? 'secondary is-active'
-                    : 'secondary'
-                }
-                onClick={() => handleSelectConverterTab('textToGlyph')}
-              >
-                日本語 → 桶地下
-              </button>
-              <button
-                type="button"
-                className={
-                  converterTab === 'glyphToText'
-                    ? 'secondary is-active'
-                    : 'secondary'
-                }
-                onClick={() => handleSelectConverterTab('glyphToText')}
-              >
-                桶地下 → 日本語
-              </button>
-            </div>
-
-            <div className="converter-section">
-              {converterTab === 'glyphToText' ? (
-                <>
-                  <textarea
-                    className="converter-textarea"
-                    rows={1}
-                    value={glyphToTextInput}
-                    onChange={(event) => {
-                      setGlyphToTextInput(event.currentTarget.value);
-                      setConverterMessage('');
-                      setConverterError('');
-                    }}
-                    placeholder="桶地下文字を入力"
-                  />
-                  <div className="converter-output">
-                    {glyphToTextOutput || '（変換結果）'}
-                  </div>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => {
-                      void handleCopyConverterResult(
-                        glyphToTextOutput,
-                        '日本語変換結果をコピーしました。'
-                      );
-                    }}
-                    disabled={!glyphToTextOutput}
-                  >
-                    結果をコピー
-                  </button>
-                </>
-              ) : null}
-
-              {converterTab === 'textToGlyph' ? (
-                <>
-                  <textarea
-                    className="converter-textarea"
-                    rows={1}
-                    value={textToGlyphInput}
-                    onChange={(event) => {
-                      setTextToGlyphInput(event.currentTarget.value);
-                      setConverterMessage('');
-                      setConverterError('');
-                    }}
-                    placeholder="日本語を入力"
-                  />
-                  <div className="converter-candidates">
-                    {textToGlyphSegments.length === 0 ? (
-                      <p className="caption">候補がここに表示されます。</p>
-                    ) : (
-                      textToGlyphSegments.map((segment, index) => (
-                        <div
-                          key={`segment-${index}-${segment.token}`}
-                          className="converter-segment"
-                        >
-                          <span className="converter-token">
-                            {segment.token}
-                          </span>
-                          {segment.candidates.length === 0 ? (
-                            <span className="converter-no-candidate">
-                              候補なし
-                            </span>
-                          ) : (
-                            <div className="converter-choices">
-                              {segment.candidates.map((candidate) => (
-                                <button
-                                  key={`choice-${index}-${candidate}`}
-                                  type="button"
-                                  className={
-                                    textToGlyphSelected[index] === candidate
-                                      ? 'secondary is-active'
-                                      : 'secondary'
-                                  }
-                                  onClick={() => {
-                                    setTextToGlyphSelected((prev) => {
-                                      const next = [...prev];
-                                      next[index] = candidate;
-                                      return next;
-                                    });
-                                  }}
-                                >
-                                  {candidate}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <div className="converter-output">
-                    {textToGlyphOutput || '（変換結果）'}
-                  </div>
-                  <div className="converter-actions">
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => {
-                        void handleCopyConverterResult(
-                          textToGlyphOutput,
-                          '桶地下文字変換結果をコピーしました。'
-                        );
-                      }}
-                      disabled={!textToGlyphOutput}
-                    >
-                      結果をコピー
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => {
-                        handleSearchOfficialSite(textToGlyphOutput);
-                      }}
-                      disabled={!textToGlyphOutput}
-                    >
-                      公式サイトで検索
-                    </button>
-                  </div>
-                </>
-              ) : null}
-            </div>
+            <ConverterPanel
+              mappings={table?.mappings ?? {}}
+              enableOkck24HourMode={
+                settings?.enableOkck24HourMode ??
+                DEFAULT_SETTINGS.enableOkck24HourMode
+              }
+              tab={converterTab}
+              onTabChange={handleSelectConverterTab}
+            />
           </section>
 
           <section className="panel">

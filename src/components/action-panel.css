@@ -28,15 +28,21 @@ select {
   max-height: 560px;
   flex-direction: column;
   gap: 12px;
-  padding: 12px;
+  padding: 10px;
 }
 
 .action-panel-shell.is-sidepanel {
-  box-sizing: border-box;
-  height: 100%;
   max-height: none;
-  min-height: 100%;
-  padding: 16px;
+  padding: 8px;
+}
+
+.action-panel-shell.is-sidepanel .action-panel-section {
+  flex: none;
+}
+
+.action-panel-shell.is-sidepanel .action-panel-bookmark-list {
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .action-panel-settings-link {
@@ -48,6 +54,7 @@ select {
   border-radius: 14px;
   background: rgba(255, 252, 244, 0.92);
   padding: 12px 14px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -74,23 +81,102 @@ select {
   box-shadow: 0 10px 30px rgba(109, 91, 44, 0.08);
 }
 
-.action-panel-section-header {
+.action-panel-section-toggle {
   display: flex;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 14px 10px;
+  border: 0;
+  background: transparent;
+  padding: 12px 14px;
   border-bottom: 1px solid #efe5cb;
+  text-align: left;
+  cursor: pointer;
 }
 
-.action-panel-section-header h1 {
+.action-panel-section-toggle:hover {
+  background: rgba(255, 252, 244, 0.5);
+}
+
+.action-panel-section.is-collapsed .action-panel-section-toggle {
+  border-bottom: 0;
+}
+
+.action-panel-section-heading {
   margin: 0;
   font-size: 14px;
+  font-weight: 700;
 }
 
-.action-panel-section-header span {
+.action-panel-section-toggle-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-panel-section-meta {
+  display: inline-flex;
+  align-items: center;
   color: #7b7280;
   font-size: 12px;
+  line-height: 1;
+}
+
+.action-panel-section-caret {
+  display: inline-flex;
+  transform: rotate(0deg);
+  transition: transform 140ms ease;
+}
+
+.action-panel-section-caret.is-expanded {
+  transform: rotate(90deg);
+}
+
+.action-panel-section-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  min-height: 0;
+  opacity: 1;
+  transition:
+    grid-template-rows 180ms ease,
+    opacity 140ms ease,
+    visibility 0s linear;
+  visibility: visible;
+}
+
+.action-panel-section-body.is-collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    grid-template-rows 180ms ease,
+    opacity 140ms ease,
+    visibility 0s linear 180ms;
+  visibility: hidden;
+}
+
+.action-panel-section-body-inner {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.action-panel-bookmarks-body {
+  flex: 1;
+}
+
+.action-panel-caption {
+  margin: 8px 0 0;
+  padding: 0 14px 12px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.action-panel-body {
+  padding: 0 14px 14px;
 }
 
 .action-panel-empty {

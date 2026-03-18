@@ -1,0 +1,142 @@
+.converter-status {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.converter-status.is-success {
+  color: #0f766e;
+}
+
+.converter-status.is-error {
+  color: #b91c1c;
+}
+
+.converter-empty {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.converter-button {
+  border: 1px solid #d6c9a6;
+  border-radius: 10px;
+  background: #f3ede7;
+  padding: 8px 12px;
+  color: #4a3d32;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.converter-button:hover:not(:disabled) {
+  background: #e5dbd1;
+}
+
+.converter-button.is-active {
+  background: #d9ccbf;
+  border-color: #c9b8a7;
+}
+
+.converter-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.converter-section {
+  border: 1px solid #e2d6b8;
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.converter-textarea {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  border: 1px solid #dccca7;
+  border-radius: 10px;
+  background: #fffdfa;
+  padding: 8px 10px;
+  font: inherit;
+  color: #1f2937;
+  resize: vertical;
+}
+
+.converter-textarea:focus {
+  outline: 2px solid #d7b25b;
+  outline-offset: 1px;
+}
+
+.converter-output {
+  margin: 8px 0;
+  min-height: 40px;
+  border: 1px solid #e6dbc1;
+  border-radius: 10px;
+  background: #faf8f3;
+  padding: 8px 10px;
+  overflow-wrap: anywhere;
+}
+
+.converter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.converter-candidates {
+  margin: 8px 0;
+  border: 1px solid #e6dbc1;
+  border-radius: 10px;
+  background: #faf8f3;
+  padding: 10px;
+}
+
+.converter-segment {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.converter-segment:last-child {
+  margin-bottom: 0;
+}
+
+.converter-token {
+  font-weight: 700;
+  color: #4a3d32;
+}
+
+.converter-no-candidate {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.converter-choices {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.converter-tab-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid #d6c9a6;
+  border-radius: 10px;
+  background: #f3ede7;
+}
+
+.converter-tab-group .converter-button {
+  border: 0;
+  border-right: 1px solid #d6c9a6;
+  border-radius: 0;
+}
+
+.converter-tab-group .converter-button:last-child {
+  border-right: 0;
+}
