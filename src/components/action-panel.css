@@ -32,8 +32,10 @@ select {
 }
 
 .action-panel-shell.is-sidepanel {
+  box-sizing: border-box;
+  height: 100%;
   max-height: none;
-  min-height: 100vh;
+  min-height: 100%;
   padding: 16px;
 }
 
