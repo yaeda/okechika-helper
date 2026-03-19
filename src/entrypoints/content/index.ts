@@ -1,6 +1,7 @@
 import { decodeTextWithMappings } from '@/lib/conversion';
 import {
   getState,
+  isOkckHost,
   recordDiscoveredPage,
   resolveMatchedRootUrl,
   setConversionTableHighlightState,
@@ -35,8 +36,31 @@ let currentMappings: DecodeMap = {};
 let currentSearchRootUrl: string | null = null;
 let currentTooltipSearchOpenInNewTab = false;
 let currentOkck24HourModeEnabled = false;
+let currentOkckResponsiveLayoutFixEnabled = false;
 let isActive = false;
 let observer: MutationObserver | null = null;
+
+function syncSiteLayoutFix(
+  rootUrl: string | null,
+  active: boolean,
+  enabled: boolean
+): void {
+  if (!active || !enabled || !rootUrl) {
+    delete document.documentElement.dataset.okechikaSite;
+    return;
+  }
+
+  try {
+    if (isOkckHost(new URL(rootUrl).hostname)) {
+      document.documentElement.dataset.okechikaSite = 'okck';
+      return;
+    }
+  } catch {
+    // Ignore invalid URLs and remove any stale site flag.
+  }
+
+  delete document.documentElement.dataset.okechikaSite;
+}
 
 function decodeSelectedText(text: string): string {
   return Array.from(text)
@@ -57,6 +81,11 @@ async function syncPageStatus(
   const pageUrl = await getPageUrlForMatching();
   currentSearchRootUrl = resolveMatchedRootUrl(nextState.settings, pageUrl);
   const nextIsActive = shouldRunOnUrl(nextState.settings, pageUrl);
+  syncSiteLayoutFix(
+    currentSearchRootUrl,
+    nextIsActive,
+    currentOkckResponsiveLayoutFixEnabled
+  );
   const discoveredEntry = nextState.discoveredPages.find(
     (page) => page.url === pageUrl
   );
@@ -94,6 +123,8 @@ async function refreshActivation(
   annotation.setMappings(currentMappings);
   currentTooltipSearchOpenInNewTab = state.settings.tooltipSearchOpenInNewTab;
   currentOkck24HourModeEnabled = state.settings.enableOkck24HourMode;
+  currentOkckResponsiveLayoutFixEnabled =
+    state.settings.enableOkckResponsiveLayoutFix;
   const nextIsActive = await syncPageStatus(
     bookmarkButton,
     sidePanelButton,

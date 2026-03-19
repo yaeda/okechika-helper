@@ -458,6 +458,19 @@ export function OptionsApp() {
     });
   }
 
+  async function handleToggleOkckResponsiveLayoutFix(
+    checked: boolean
+  ): Promise<void> {
+    if (!settings) {
+      return;
+    }
+
+    await saveSettings({
+      ...settings,
+      enableOkckResponsiveLayoutFix: checked
+    });
+  }
+
   async function handleToggleTooltipSearchOpenInNewTab(
     checked: boolean
   ): Promise<void> {
@@ -771,6 +784,28 @@ export function OptionsApp() {
             <p className="caption">
               桶地下サイト向けの追加機能と、ツールチップの検索ボタンの開き方を切り替えできます。
             </p>
+
+            <label className="subtle-setting-card">
+              <span className="source-font-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.enableOkckResponsiveLayoutFix}
+                  onChange={(event) => {
+                    void handleToggleOkckResponsiveLayoutFix(
+                      event.currentTarget.checked
+                    );
+                  }}
+                />
+                <span>桶地下サイトのレイアウト補正を有効にする</span>
+              </span>
+              <p className="caption">
+                一部の画面サイズで発生する、ページ全体の横スクロールを抑えます。
+              </p>
+              <p className="caption">
+                レイアウト崩れが演出や仕様の一部である場合、ゲームの進行に影響する可能性があります。気になる場合は
+                OFF にしてください。
+              </p>
+            </label>
 
             <label className="subtle-setting-card">
               <span className="source-font-toggle">

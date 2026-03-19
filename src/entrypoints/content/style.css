@@ -178,3 +178,38 @@ ruby.okechika-ruby rt {
   font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
   font-size: 15px;
 }
+
+@media screen and (min-width: 769px) and (max-width: 1279px) {
+  html[data-okechika-site='okck'] body {
+    overflow-x: clip !important;
+  }
+
+  html[data-okechika-site='okck'] .l-wrapper {
+    min-width: 0 !important;
+    overflow-x: clip !important;
+  }
+
+  html[data-okechika-site='okck'] .l-container,
+  html[data-okechika-site='okck'] .l-container--middle {
+    width: min(100%, 1200px) !important;
+    padding-inline: clamp(24px, 4vw, 48px) !important;
+  }
+
+  html[data-okechika-site='okck'] .l-footer__main .l-container,
+  html[data-okechika-site='okck'] .l-footer__meta .l-container {
+    flex-wrap: wrap;
+    gap: 12px 24px;
+  }
+}
+
+@media screen and (min-width: 769px) and (max-width: 1023px) {
+  html[data-okechika-site='okck'] .c-keypad {
+    overflow-x: auto !important;
+    overscroll-behavior-x: contain;
+  }
+
+  html[data-okechika-site='okck'] .p-content .image-content {
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+}
