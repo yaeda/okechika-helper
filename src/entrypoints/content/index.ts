@@ -3,6 +3,7 @@ import {
   getState,
   recordDiscoveredPage,
   resolveMatchedRootUrl,
+  setConversionTableHighlightState,
   shouldRunOnUrl,
   toggleBookmark,
   upsertMappings
@@ -19,6 +20,7 @@ import {
   type PageActionButtonController
 } from '@/entrypoints/content/page-action-buttons';
 import {
+  filterTranslatableGlyphChars,
   getSelectionForUnknownGlyph,
   isTranslatableGlyphChar
 } from '@/entrypoints/content/glyph';
@@ -181,7 +183,10 @@ export default defineContentScript({
       decodeSelectedText,
       () => currentSearchRootUrl,
       () => currentTooltipSearchOpenInNewTab,
-      () => currentOkck24HourModeEnabled
+      () => currentOkck24HourModeEnabled,
+      () => {
+        void setConversionTableHighlightState(null);
+      }
     );
 
     void refreshActivation(
@@ -202,6 +207,10 @@ export default defineContentScript({
         return;
       }
 
+      void setConversionTableHighlightState({
+        sourceChars: filterTranslatableGlyphChars(picked.text),
+        selectedAt: new Date().toISOString()
+      });
       tooltip.show(picked.text, picked.rect);
     };
 

@@ -122,7 +122,10 @@ export function ConversionTablePanel({
   onToggleSourceGlyphFont,
   displayMode,
   onDisplayModeChange,
-  statusContent
+  statusContent,
+  highlightedSources,
+  highlightRequestId,
+  isVisible = true
 }: {
   table: DecodeTable;
   useSourceGlyphFont: boolean;
@@ -130,6 +133,9 @@ export function ConversionTablePanel({
   displayMode?: OptionsTableDisplayMode;
   onDisplayModeChange?: (nextMode: OptionsTableDisplayMode) => void;
   statusContent?: ReactNode;
+  highlightedSources?: string[];
+  highlightRequestId?: string | null;
+  isVisible?: boolean;
 }) {
   const [localTable, setLocalTable] = useState(table);
   const [inlineEditError, setInlineEditError] = useState('');
@@ -143,6 +149,7 @@ export function ConversionTablePanel({
       DEFAULT_OPTIONS_UI_STATE.tableDisplayMode
     );
   const skipBlurCommitRef = useRef(false);
+  const sourceCellRefs = useRef(new Map<string, HTMLTableCellElement>());
 
   useEffect(() => {
     setLocalTable(table);
@@ -201,11 +208,29 @@ export function ConversionTablePanel({
       );
   }, [localTable]);
 
+  const highlightedSourceSet = useMemo(
+    () => new Set(highlightedSources ?? []),
+    [highlightedSources]
+  );
+
+  const firstHighlightedSource = highlightedSources?.[0] ?? null;
+
   function handleSelectDisplayMode(nextMode: OptionsTableDisplayMode): void {
     if (displayMode === undefined) {
       setInternalDisplayMode(nextMode);
     }
     onDisplayModeChange?.(nextMode);
+  }
+
+  function bindSourceCellRef(source: string) {
+    return (node: HTMLTableCellElement | null): void => {
+      if (node) {
+        sourceCellRefs.current.set(source, node);
+        return;
+      }
+
+      sourceCellRefs.current.delete(source);
+    };
   }
 
   function startInlineEdit(
@@ -313,11 +338,17 @@ export function ConversionTablePanel({
   function renderGlyphCell(source: string, target: string): JSX.Element {
     const isEditing =
       editingCell?.source === source && editingCell.cellKey === source;
+    const isHighlighted = highlightedSourceSet.has(source);
 
     return (
       <td
         key={source}
-        className="conversion-table-glyph-cell conversion-table-is-editable"
+        ref={bindSourceCellRef(source)}
+        className={joinClassNames(
+          'conversion-table-glyph-cell',
+          'conversion-table-is-editable',
+          isHighlighted ? 'conversion-table-cell-highlighted' : undefined
+        )}
         onDoubleClick={() => startInlineEdit(source, target, source)}
         title="ダブルクリックで編集"
       >
@@ -361,6 +392,29 @@ export function ConversionTablePanel({
       </td>
     );
   }
+
+  useEffect(() => {
+    if (!isVisible || !firstHighlightedSource || !highlightRequestId) {
+      return;
+    }
+
+    const targetCell = sourceCellRefs.current.get(firstHighlightedSource);
+    if (!targetCell) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      targetCell.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [firstHighlightedSource, highlightRequestId, isVisible]);
 
   return (
     <div className="conversion-table-panel">
@@ -472,8 +526,12 @@ export function ConversionTablePanel({
               {otherMappings.map(([source, target]) => (
                 <tr key={`other-${source}`}>
                   <td
+                    ref={bindSourceCellRef(source)}
                     className={joinClassNames(
                       'conversion-table-is-editable',
+                      highlightedSourceSet.has(source)
+                        ? 'conversion-table-cell-highlighted'
+                        : undefined,
                       useSourceGlyphFont
                         ? 'conversion-table-source-glyph'
                         : undefined,

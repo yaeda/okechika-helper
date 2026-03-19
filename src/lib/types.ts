@@ -36,6 +36,11 @@ export interface PopupUiState {
   showBookmarkedOnly: boolean;
 }
 
+export interface ConversionTableHighlightState {
+  sourceChars: string[];
+  selectedAt: string;
+}
+
 export interface PendingExtensionUpdate {
   version: string;
   detectedAt: string;

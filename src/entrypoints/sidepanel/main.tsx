@@ -10,6 +10,7 @@ import { ConverterPanel } from '@/components/converter-panel';
 import { ConversionTablePanel } from '@/components/conversion-table-panel';
 import { OKECHIKA_CHARS } from '@/lib/okechika-chars';
 import {
+  getConversionTableHighlightState,
   DEFAULT_OPTIONS_UI_STATE,
   DEFAULT_SETTINGS,
   DEFAULT_TABLE,
@@ -19,6 +20,7 @@ import {
   setSettings
 } from '@/lib/storage';
 import type {
+  ConversionTableHighlightState,
   DecodeTable,
   ExtensionSettings,
   OptionsUiState
@@ -32,6 +34,8 @@ function SidepanelApp() {
   const [optionsUiState, setLocalOptionsUiState] = useState<OptionsUiState>(
     DEFAULT_OPTIONS_UI_STATE
   );
+  const [tableHighlightState, setTableHighlightState] =
+    useState<ConversionTableHighlightState | null>(null);
   const [isDiscoveredPanelExpanded, setIsDiscoveredPanelExpanded] =
     useState(true);
   const [isConverterPanelExpanded, setIsConverterPanelExpanded] =
@@ -39,7 +43,7 @@ function SidepanelApp() {
   const [isTablePanelExpanded, setIsTablePanelExpanded] = useState(false);
 
   useEffect(() => {
-    async function load(): Promise<void> {
+    async function loadPanelState(): Promise<void> {
       const [state, nextOptionsUiState] = await Promise.all([
         getState(),
         getOptionsUiState()
@@ -49,16 +53,31 @@ function SidepanelApp() {
       setLocalOptionsUiState(nextOptionsUiState);
     }
 
-    void load();
+    async function loadHighlightState(): Promise<void> {
+      const nextHighlightState = await getConversionTableHighlightState();
+      setTableHighlightState(nextHighlightState);
+    }
+
+    void Promise.all([loadPanelState(), loadHighlightState()]);
 
     const handler: Parameters<
       typeof chrome.storage.onChanged.addListener
     >[0] = (changes, areaName) => {
-      if (
-        (areaName === 'sync' && (changes.decodeTable || changes.settings)) ||
-        (areaName === 'local' && changes.optionsUiState)
-      ) {
-        void load();
+      if (areaName === 'sync' && (changes.decodeTable || changes.settings)) {
+        void loadPanelState();
+        return;
+      }
+
+      if (areaName !== 'local') {
+        return;
+      }
+
+      if (changes.optionsUiState) {
+        void loadPanelState();
+      }
+
+      if (changes.conversionTableHighlightState) {
+        void loadHighlightState();
       }
     };
 
@@ -142,6 +161,9 @@ function SidepanelApp() {
             }}
             displayMode={optionsUiState.tableDisplayMode}
             onDisplayModeChange={handleSelectTableDisplayMode}
+            highlightedSources={tableHighlightState?.sourceChars}
+            highlightRequestId={tableHighlightState?.selectedAt ?? null}
+            isVisible={isTablePanelExpanded}
           />
         </div>
       </ActionAccordionSection>
