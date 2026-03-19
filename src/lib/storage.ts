@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   enabledRootUrls: DEFAULT_ROOT_URLS,
   useSourceGlyphFontInOptions: true,
   enableOkck24HourMode: false,
+  enableOkckResponsiveLayoutFix: false,
   tooltipSearchOpenInNewTab: false
 };
 
@@ -93,6 +94,9 @@ export async function getState(): Promise<ExtensionState> {
     DEFAULT_SETTINGS.useSourceGlyphFontInOptions;
   const enableOkck24HourMode =
     rawSettings?.enableOkck24HourMode ?? DEFAULT_SETTINGS.enableOkck24HourMode;
+  const enableOkckResponsiveLayoutFix =
+    rawSettings?.enableOkckResponsiveLayoutFix ??
+    DEFAULT_SETTINGS.enableOkckResponsiveLayoutFix;
   const tooltipSearchOpenInNewTab =
     rawSettings?.tooltipSearchOpenInNewTab ??
     DEFAULT_SETTINGS.tooltipSearchOpenInNewTab;
@@ -115,6 +119,7 @@ export async function getState(): Promise<ExtensionState> {
         nextRootUrls.length > 0 ? nextRootUrls : DEFAULT_ROOT_URLS,
       useSourceGlyphFontInOptions,
       enableOkck24HourMode,
+      enableOkckResponsiveLayoutFix,
       tooltipSearchOpenInNewTab
     },
     discoveredPages: mergeSavedPages(storedDiscoveredPages, bookmarks),
@@ -261,6 +266,7 @@ export async function setSettings(settings: ExtensionSettings): Promise<void> {
       enabledRootUrls: settings.enabledRootUrls.map(normalizeRootUrl),
       useSourceGlyphFontInOptions: settings.useSourceGlyphFontInOptions,
       enableOkck24HourMode: settings.enableOkck24HourMode,
+      enableOkckResponsiveLayoutFix: settings.enableOkckResponsiveLayoutFix,
       tooltipSearchOpenInNewTab: settings.tooltipSearchOpenInNewTab
     } satisfies ExtensionSettings
   });
