@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import {
@@ -7,25 +7,46 @@ import {
   ActionSurface
 } from '@/components/action-panel';
 import { ConverterPanel } from '@/components/converter-panel';
-import { DEFAULT_SETTINGS, getState } from '@/lib/storage';
-import type { DecodeMap } from '@/lib/types';
+import { ConversionTablePanel } from '@/components/conversion-table-panel';
+import { OKECHIKA_CHARS } from '@/lib/okechika-chars';
+import {
+  DEFAULT_OPTIONS_UI_STATE,
+  DEFAULT_SETTINGS,
+  DEFAULT_TABLE,
+  getOptionsUiState,
+  getState,
+  setOptionsUiState,
+  setSettings
+} from '@/lib/storage';
+import type {
+  DecodeTable,
+  ExtensionSettings,
+  OptionsUiState
+} from '@/lib/types';
 import '@/entrypoints/sidepanel/sidepanel.css';
 
 function SidepanelApp() {
-  const [mappings, setMappings] = useState<DecodeMap>({});
-  const [enableOkck24HourMode, setEnableOkck24HourMode] = useState(
-    DEFAULT_SETTINGS.enableOkck24HourMode
+  const [settings, setLocalSettings] =
+    useState<ExtensionSettings>(DEFAULT_SETTINGS);
+  const [table, setTable] = useState<DecodeTable>(DEFAULT_TABLE);
+  const [optionsUiState, setLocalOptionsUiState] = useState<OptionsUiState>(
+    DEFAULT_OPTIONS_UI_STATE
   );
   const [isDiscoveredPanelExpanded, setIsDiscoveredPanelExpanded] =
     useState(true);
   const [isConverterPanelExpanded, setIsConverterPanelExpanded] =
     useState(true);
+  const [isTablePanelExpanded, setIsTablePanelExpanded] = useState(false);
 
   useEffect(() => {
     async function load(): Promise<void> {
-      const state = await getState();
-      setMappings(state.table.mappings);
-      setEnableOkck24HourMode(state.settings.enableOkck24HourMode);
+      const [state, nextOptionsUiState] = await Promise.all([
+        getState(),
+        getOptionsUiState()
+      ]);
+      setTable(state.table);
+      setLocalSettings(state.settings);
+      setLocalOptionsUiState(nextOptionsUiState);
     }
 
     void load();
@@ -33,11 +54,10 @@ function SidepanelApp() {
     const handler: Parameters<
       typeof chrome.storage.onChanged.addListener
     >[0] = (changes, areaName) => {
-      if (areaName !== 'sync') {
-        return;
-      }
-
-      if (changes.decodeTable || changes.settings) {
+      if (
+        (areaName === 'sync' && (changes.decodeTable || changes.settings)) ||
+        (areaName === 'local' && changes.optionsUiState)
+      ) {
         void load();
       }
     };
@@ -47,6 +67,35 @@ function SidepanelApp() {
       chrome.storage.onChanged.removeListener(handler);
     };
   }, []);
+
+  async function handleToggleSourceGlyphFont(checked: boolean): Promise<void> {
+    const nextSettings = {
+      ...settings,
+      useSourceGlyphFontInOptions: checked
+    };
+    setLocalSettings(nextSettings);
+    await setSettings(nextSettings);
+  }
+
+  function handleSelectTableDisplayMode(
+    nextMode: OptionsUiState['tableDisplayMode']
+  ): void {
+    const nextUiState = {
+      ...optionsUiState,
+      tableDisplayMode: nextMode
+    };
+    setLocalOptionsUiState(nextUiState);
+    void setOptionsUiState(nextUiState);
+  }
+
+  const tableProgressText = useMemo(() => {
+    const decoded = OKECHIKA_CHARS.reduce((count, source) => {
+      const target = table.mappings[source];
+      return target && target !== '?' ? count + 1 : count;
+    }, 0);
+
+    return `${decoded}/${OKECHIKA_CHARS.length}`;
+  }, [table]);
 
   return (
     <ActionSurface mode="sidepanel">
@@ -70,8 +119,29 @@ function SidepanelApp() {
         </p>
         <div className="action-panel-body">
           <ConverterPanel
-            mappings={mappings}
-            enableOkck24HourMode={enableOkck24HourMode}
+            mappings={table.mappings}
+            enableOkck24HourMode={settings.enableOkck24HourMode}
+          />
+        </div>
+      </ActionAccordionSection>
+
+      <ActionAccordionSection
+        title="変換テーブル"
+        meta={tableProgressText}
+        expanded={isTablePanelExpanded}
+        onToggle={() => {
+          setIsTablePanelExpanded((prev) => !prev);
+        }}
+      >
+        <div className="action-panel-body">
+          <ConversionTablePanel
+            table={table}
+            useSourceGlyphFont={settings.useSourceGlyphFontInOptions}
+            onToggleSourceGlyphFont={(checked) => {
+              void handleToggleSourceGlyphFont(checked);
+            }}
+            displayMode={optionsUiState.tableDisplayMode}
+            onDisplayModeChange={handleSelectTableDisplayMode}
           />
         </div>
       </ActionAccordionSection>
