@@ -37,6 +37,7 @@ let currentSearchRootUrl: string | null = null;
 let currentTooltipSearchOpenInNewTab = false;
 let currentOkck24HourModeEnabled = false;
 let currentOkckResponsiveLayoutFixEnabled = false;
+let currentSelectionHighlightEnabled = false;
 let isActive = false;
 let observer: MutationObserver | null = null;
 
@@ -125,6 +126,11 @@ async function refreshActivation(
   currentOkck24HourModeEnabled = state.settings.enableOkck24HourMode;
   currentOkckResponsiveLayoutFixEnabled =
     state.settings.enableOkckResponsiveLayoutFix;
+  currentSelectionHighlightEnabled =
+    state.settings.highlightSelectedTextInSidePanel;
+  if (!currentSelectionHighlightEnabled) {
+    await setConversionTableHighlightState(null);
+  }
   const nextIsActive = await syncPageStatus(
     bookmarkButton,
     sidePanelButton,
@@ -238,10 +244,14 @@ export default defineContentScript({
         return;
       }
 
-      void setConversionTableHighlightState({
-        sourceChars: filterTranslatableGlyphChars(picked.text),
-        selectedAt: new Date().toISOString()
-      });
+      if (currentSelectionHighlightEnabled) {
+        void setConversionTableHighlightState({
+          sourceChars: filterTranslatableGlyphChars(picked.text),
+          selectedAt: new Date().toISOString()
+        });
+      } else {
+        void setConversionTableHighlightState(null);
+      }
       tooltip.show(picked.text, picked.rect);
     };
 

@@ -18,6 +18,7 @@ export interface DecodeTable {
 export interface ExtensionSettings {
   enabledRootUrls: string[];
   useSourceGlyphFontInOptions: boolean;
+  highlightSelectedTextInSidePanel: boolean;
   enableOkck24HourMode: boolean;
   enableOkckResponsiveLayoutFix: boolean;
   tooltipSearchOpenInNewTab: boolean;
