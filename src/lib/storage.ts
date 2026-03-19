@@ -32,6 +32,7 @@ export const OKCK_HOST = 'qtes9gu0k.xyz';
 export const DEFAULT_SETTINGS: ExtensionSettings = {
   enabledRootUrls: DEFAULT_ROOT_URLS,
   useSourceGlyphFontInOptions: true,
+  highlightSelectedTextInSidePanel: true,
   enableOkck24HourMode: false,
   enableOkckResponsiveLayoutFix: false,
   tooltipSearchOpenInNewTab: false
@@ -92,6 +93,9 @@ export async function getState(): Promise<ExtensionState> {
   const useSourceGlyphFontInOptions =
     rawSettings?.useSourceGlyphFontInOptions ??
     DEFAULT_SETTINGS.useSourceGlyphFontInOptions;
+  const highlightSelectedTextInSidePanel =
+    rawSettings?.highlightSelectedTextInSidePanel ??
+    DEFAULT_SETTINGS.highlightSelectedTextInSidePanel;
   const enableOkck24HourMode =
     rawSettings?.enableOkck24HourMode ?? DEFAULT_SETTINGS.enableOkck24HourMode;
   const enableOkckResponsiveLayoutFix =
@@ -118,6 +122,7 @@ export async function getState(): Promise<ExtensionState> {
       enabledRootUrls:
         nextRootUrls.length > 0 ? nextRootUrls : DEFAULT_ROOT_URLS,
       useSourceGlyphFontInOptions,
+      highlightSelectedTextInSidePanel,
       enableOkck24HourMode,
       enableOkckResponsiveLayoutFix,
       tooltipSearchOpenInNewTab
@@ -265,6 +270,8 @@ export async function setSettings(settings: ExtensionSettings): Promise<void> {
     [STORAGE_KEYS.settings]: {
       enabledRootUrls: settings.enabledRootUrls.map(normalizeRootUrl),
       useSourceGlyphFontInOptions: settings.useSourceGlyphFontInOptions,
+      highlightSelectedTextInSidePanel:
+        settings.highlightSelectedTextInSidePanel,
       enableOkck24HourMode: settings.enableOkck24HourMode,
       enableOkckResponsiveLayoutFix: settings.enableOkckResponsiveLayoutFix,
       tooltipSearchOpenInNewTab: settings.tooltipSearchOpenInNewTab

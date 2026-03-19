@@ -96,6 +96,17 @@ function SidepanelApp() {
     await setSettings(nextSettings);
   }
 
+  async function handleToggleSelectionHighlight(
+    checked: boolean
+  ): Promise<void> {
+    const nextSettings = {
+      ...settings,
+      highlightSelectedTextInSidePanel: checked
+    };
+    setLocalSettings(nextSettings);
+    await setSettings(nextSettings);
+  }
+
   function handleSelectTableDisplayMode(
     nextMode: OptionsUiState['tableDisplayMode']
   ): void {
@@ -158,6 +169,10 @@ function SidepanelApp() {
             useSourceGlyphFont={settings.useSourceGlyphFontInOptions}
             onToggleSourceGlyphFont={(checked) => {
               void handleToggleSourceGlyphFont(checked);
+            }}
+            highlightSelectedText={settings.highlightSelectedTextInSidePanel}
+            onToggleHighlightSelectedText={(checked) => {
+              void handleToggleSelectionHighlight(checked);
             }}
             displayMode={optionsUiState.tableDisplayMode}
             onDisplayModeChange={handleSelectTableDisplayMode}

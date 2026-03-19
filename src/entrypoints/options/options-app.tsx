@@ -1017,6 +1017,7 @@ export function OptionsApp() {
             onToggleSourceGlyphFont={(checked) => {
               void handleToggleSourceGlyphFont(checked);
             }}
+            showHighlightToggle={false}
             displayMode={displayMode}
             onDisplayModeChange={handleSelectDisplayMode}
             statusContent={
