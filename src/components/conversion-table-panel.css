@@ -1,0 +1,271 @@
+@font-face {
+  font-family: 'UndergroundUnknownGlyphs';
+  src: url('../assets/UnknownGlyphs.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.conversion-table-panel {
+  min-width: 0;
+}
+
+.conversion-table-caption {
+  margin: 8px 0;
+  color: #685f57;
+  font-size: 13px;
+}
+
+.conversion-table-caption.is-error {
+  color: #b42318;
+}
+
+.conversion-table-progress {
+  display: inline-block;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f7e4db;
+  color: #4a3d32;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.conversion-table-display-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.conversion-table-display-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
+.conversion-table-source-font-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #685f57;
+  font-size: 13px;
+}
+
+.conversion-table-source-font-toggle input {
+  margin: 0;
+}
+
+.conversion-table-source-font-toggle span {
+  overflow-wrap: anywhere;
+}
+
+.conversion-table-display-mode-group {
+  display: inline-flex;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+  border: 1px solid #ddd5cd;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f3ede7;
+}
+
+.conversion-table-button {
+  border: 0;
+  border-right: 1px solid #ddd5cd;
+  border-radius: 0;
+  background: #f3ede7;
+  padding: 8px 12px;
+  color: #4a3d32;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.conversion-table-button:last-child {
+  border-right: 0;
+}
+
+.conversion-table-button:hover {
+  background: #e5dbd1;
+}
+
+.conversion-table-button.is-active {
+  background: #d9ccbf;
+}
+
+.conversion-table-wrap {
+  width: fit-content;
+  min-width: 0;
+  max-width: 100%;
+  position: relative;
+}
+
+.conversion-table-wrap-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.conversion-table-wrap-frame {
+  display: inline-block;
+  border: 1px solid #ddd5cd;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.conversion-table-wrap::before,
+.conversion-table-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 1;
+}
+
+.conversion-table-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, #fffefb, transparent);
+}
+
+.conversion-table-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, #fffefb, transparent);
+}
+
+.conversion-table-wrap.has-left-fade::before {
+  opacity: 1;
+}
+
+.conversion-table-wrap.has-right-fade::after {
+  opacity: 1;
+}
+
+.conversion-table-wrap.is-second {
+  margin-top: 10px;
+}
+
+.conversion-table-wrap.is-fill {
+  width: 100%;
+}
+
+.conversion-table-wrap.is-fill .conversion-table-wrap-frame {
+  min-width: 100%;
+}
+
+.conversion-table-wrap.is-compact {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.conversion-table-grid {
+  width: max-content;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.conversion-table-wrap.is-fill .conversion-table-grid {
+  min-width: 100%;
+}
+
+.conversion-table-grid.conversion-table-grid-compact {
+  width: auto;
+}
+
+.conversion-table-grid th,
+.conversion-table-grid td {
+  text-align: center;
+  border-bottom: 1px solid #ddd5cd;
+  border-right: 1px solid #ddd5cd;
+  padding: 6px;
+}
+
+.conversion-table-grid tr > *:last-child {
+  border-right: 0;
+}
+
+.conversion-table-grid thead th {
+  background: #f7e4db;
+  font-size: 13px;
+}
+
+.conversion-table-glyph-cell {
+  min-width: 56px;
+  white-space: nowrap;
+  font-size: 16px;
+}
+
+.conversion-table-cell-highlighted {
+  background: #fff0b8;
+  box-shadow: inset 0 0 0 2px #d9a441;
+}
+
+.conversion-table-source-glyph {
+  font-family:
+    'UndergroundUnknownGlyphs', 'UnknownGlyphs', 'IBM Plex Sans',
+    'Noto Sans JP', sans-serif;
+  font-size: 1.12em;
+  line-height: 1;
+}
+
+.conversion-table-glyph-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.conversion-table-glyph-pair > span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.conversion-table-glyph-divider {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.conversion-table-editable-target.conversion-table-is-unknown,
+.conversion-table-glyph-divider.conversion-table-is-unknown,
+.conversion-table-source-glyph.conversion-table-is-unknown,
+.conversion-table-is-unknown {
+  opacity: 0.55;
+}
+
+.conversion-table-is-editable {
+  cursor: text;
+}
+
+.conversion-table-editable-target {
+  user-select: none;
+}
+
+.conversion-table-cell-edit-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid #ddd5cd;
+  border-radius: 6px;
+  padding: 1px 4px;
+  font: inherit;
+  line-height: 1.2;
+  color: #171412;
+}
+
+.conversion-table-subsection-title {
+  margin: 14px 0 6px;
+  font-size: 15px;
+}

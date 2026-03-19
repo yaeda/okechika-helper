@@ -1,5 +1,6 @@
 import type {
   BookmarkEntry,
+  ConversionTableHighlightState,
   DecodeMap,
   DecodeTable,
   DiscoveredPageEntry,
@@ -17,6 +18,7 @@ const STORAGE_KEYS = {
   bookmarks: 'bookmarks',
   optionsUiState: 'optionsUiState',
   popupUiState: 'popupUiState',
+  conversionTableHighlightState: 'conversionTableHighlightState',
   pendingExtensionUpdate: 'pendingExtensionUpdate'
 } as const;
 
@@ -156,6 +158,36 @@ export async function getPopupUiState(): Promise<PopupUiState> {
   };
 }
 
+export async function getConversionTableHighlightState(): Promise<ConversionTableHighlightState | null> {
+  const result = await getLocalStorage().get(
+    STORAGE_KEYS.conversionTableHighlightState
+  );
+  const rawState = result[STORAGE_KEYS.conversionTableHighlightState] as
+    | Partial<ConversionTableHighlightState>
+    | undefined;
+
+  if (
+    !rawState ||
+    !Array.isArray(rawState.sourceChars) ||
+    typeof rawState.selectedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  const sourceChars = rawState.sourceChars.filter(
+    (value): value is string => typeof value === 'string' && value.length > 0
+  );
+
+  if (sourceChars.length === 0) {
+    return null;
+  }
+
+  return {
+    sourceChars,
+    selectedAt: rawState.selectedAt
+  };
+}
+
 export async function getPendingExtensionUpdate(): Promise<PendingExtensionUpdate | null> {
   const result = await getLocalStorage().get(
     STORAGE_KEYS.pendingExtensionUpdate
@@ -192,6 +224,20 @@ export async function setOptionsUiState(
 export async function setPopupUiState(uiState: PopupUiState): Promise<void> {
   await getLocalStorage().set({
     [STORAGE_KEYS.popupUiState]: uiState satisfies PopupUiState
+  });
+}
+
+export async function setConversionTableHighlightState(
+  state: ConversionTableHighlightState | null
+): Promise<void> {
+  if (!state || state.sourceChars.length === 0) {
+    await getLocalStorage().remove(STORAGE_KEYS.conversionTableHighlightState);
+    return;
+  }
+
+  await getLocalStorage().set({
+    [STORAGE_KEYS.conversionTableHighlightState]:
+      state satisfies ConversionTableHighlightState
   });
 }
 

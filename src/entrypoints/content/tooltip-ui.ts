@@ -68,7 +68,8 @@ export function createTooltipUi(
   decodeSelectionText: (text: string) => string,
   getSearchRootUrl: () => string | null,
   shouldOpenSearchInNewTab: () => boolean,
-  isOkck24HourModeEnabled: () => boolean
+  isOkck24HourModeEnabled: () => boolean,
+  onHide?: () => void
 ): TooltipUi {
   const ui = createIntegratedUi<TooltipMounted>(ctx, {
     position: 'overlay',
@@ -80,6 +81,18 @@ export function createTooltipUi(
       let isComposing = false;
       let isInputFocused = false;
       let state = createInitialTooltipState();
+
+      function hideTooltip(nextError = ''): void {
+        state = {
+          ...state,
+          visible: false,
+          selectedText: '',
+          inputValue: '',
+          error: nextError
+        };
+        onHide?.();
+        render();
+      }
 
       function render(): void {
         root.render(
@@ -112,13 +125,7 @@ export function createTooltipUi(
               void (async () => {
                 try {
                   await navigator.clipboard.writeText(state.selectedText);
-                  state = {
-                    ...state,
-                    visible: false,
-                    selectedText: '',
-                    inputValue: '',
-                    error: ''
-                  };
+                  hideTooltip();
                 } catch {
                   state = {
                     ...state,
@@ -133,13 +140,7 @@ export function createTooltipUi(
                 try {
                   const decoded = decodeSelectionText(state.selectedText);
                   await navigator.clipboard.writeText(decoded);
-                  state = {
-                    ...state,
-                    visible: false,
-                    selectedText: '',
-                    inputValue: '',
-                    error: ''
-                  };
+                  hideTooltip();
                 } catch {
                   state = {
                     ...state,
@@ -166,14 +167,7 @@ export function createTooltipUi(
                 openInNewTab: shouldOpenSearchInNewTab(),
                 usePost: shouldUsePostSearch(rootUrl, isOkck24HourModeEnabled())
               });
-              state = {
-                ...state,
-                visible: false,
-                selectedText: '',
-                inputValue: '',
-                error: ''
-              };
-              render();
+              hideTooltip();
             },
             onSubmit: () => {
               void (async () => {
@@ -182,14 +176,7 @@ export function createTooltipUi(
                 );
 
                 if (sourceChars.length === 0) {
-                  state = {
-                    ...state,
-                    visible: false,
-                    selectedText: '',
-                    inputValue: '',
-                    error: ''
-                  };
-                  render();
+                  hideTooltip();
                   return;
                 }
 
@@ -211,26 +198,12 @@ export function createTooltipUi(
                 );
 
                 if (Object.keys(entries).length === 0) {
-                  state = {
-                    ...state,
-                    visible: false,
-                    selectedText: '',
-                    inputValue: '',
-                    error: ''
-                  };
-                  render();
+                  hideTooltip();
                   return;
                 }
 
                 await onSubmitMappings(entries);
-                state = {
-                  ...state,
-                  visible: false,
-                  selectedText: '',
-                  inputValue: '',
-                  error: ''
-                };
-                render();
+                hideTooltip();
               })();
             }
           })
@@ -284,6 +257,7 @@ export function createTooltipUi(
       mounted.focusInput();
     },
     hide() {
+      onHide?.();
       ui.mounted?.updateState((prev) => ({
         ...prev,
         visible: false,

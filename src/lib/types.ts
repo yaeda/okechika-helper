@@ -22,18 +22,23 @@ export interface ExtensionSettings {
   tooltipSearchOpenInNewTab: boolean;
 }
 
-export type OptionsConverterTab = 'glyphToText' | 'textToGlyph';
+export type ConverterTab = 'glyphToText' | 'textToGlyph';
 
 export type OptionsTableDisplayMode = 'source' | 'target' | 'both';
 
 export interface OptionsUiState {
   showRootUrls: boolean;
-  converterTab: OptionsConverterTab;
+  converterTab: ConverterTab;
   tableDisplayMode: OptionsTableDisplayMode;
 }
 
 export interface PopupUiState {
   showBookmarkedOnly: boolean;
+}
+
+export interface ConversionTableHighlightState {
+  sourceChars: string[];
+  selectedAt: string;
 }
 
 export interface PendingExtensionUpdate {

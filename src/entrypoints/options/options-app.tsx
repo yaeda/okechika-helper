@@ -1,6 +1,8 @@
-import type { ChangeEvent, KeyboardEvent, ReactNode } from 'react';
+import type { ChangeEvent, KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { ConverterPanel } from '@/components/converter-panel';
+import { ConversionTablePanel } from '@/components/conversion-table-panel';
 import {
   BookmarkListItem,
   type BookmarkListItemData
@@ -10,18 +12,13 @@ import {
   decodeTextWithMappings
 } from '@/lib/conversion';
 import { requestRootUrlPermission } from '@/lib/host-permissions';
-import {
-  OKECHIKA_CHARS,
-  OKECHIKA_NUMBER_CHARS,
-  OKECHIKA_TEXT_CHARS
-} from '@/lib/okechika-chars';
-import { openSearchPage, shouldUsePostSearch } from '@/lib/search';
+import { createPageSearchMatcher } from '@/lib/page-search';
 import {
   DEFAULT_OPTIONS_UI_STATE,
   DEFAULT_ROOT_URLS,
   DEFAULT_SETTINGS,
-  getPendingExtensionUpdate,
   getOptionsUiState,
+  getPendingExtensionUpdate,
   getState,
   normalizeRootUrl,
   resolveMatchedRootUrl,
@@ -31,14 +28,13 @@ import {
   toCsv,
   toggleBookmark
 } from '@/lib/storage';
-import { createPageSearchMatcher } from '@/lib/page-search';
 import type {
   BookmarkEntry,
+  ConverterTab,
   DecodeMap,
   DecodeTable,
   DiscoveredPageEntry,
   ExtensionSettings,
-  OptionsConverterTab,
   OptionsTableDisplayMode,
   OptionsUiState,
   PendingExtensionUpdate
@@ -198,19 +194,6 @@ function toRootUrlInput(rawValue: string): string | null {
   }
 }
 
-function formatUpdatedAt(value: string | null): string {
-  if (!value) {
-    return '未更新';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString();
-}
-
 function maskRootUrl(value: string): string {
   try {
     const url = new URL(value);
@@ -240,13 +223,6 @@ function getFaviconUrl(pageUrl: string): string {
   return faviconUrl.toString();
 }
 
-function joinClassNames(
-  ...names: Array<string | undefined>
-): string | undefined {
-  const filtered = names.filter(Boolean);
-  return filtered.length > 0 ? filtered.join(' ') : undefined;
-}
-
 function RootUrlFavicon({ rootUrl }: { rootUrl: string }) {
   return (
     <img
@@ -255,97 +231,6 @@ function RootUrlFavicon({ rootUrl }: { rootUrl: string }) {
       alt=""
       aria-hidden="true"
     />
-  );
-}
-
-function tokenizeByLongestTargets(text: string, targets: string[]): string[] {
-  const tokens: string[] = [];
-  let index = 0;
-
-  while (index < text.length) {
-    const matched = targets.find((target) => text.startsWith(target, index));
-    if (matched) {
-      tokens.push(matched);
-      index += matched.length;
-      continue;
-    }
-
-    const char = text[index];
-    if (char) {
-      tokens.push(char);
-    }
-    index += 1;
-  }
-
-  return tokens;
-}
-
-function ScrollableTableWrap({
-  children,
-  className
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [hasLeftFade, setHasLeftFade] = useState(false);
-  const [hasRightFade, setHasRightFade] = useState(false);
-
-  useEffect(() => {
-    function updateFadeVisibility(): void {
-      const element = containerRef.current;
-      if (!element) {
-        return;
-      }
-
-      const maxScrollLeft = Math.max(
-        0,
-        element.scrollWidth - element.clientWidth
-      );
-      setHasLeftFade(element.scrollLeft > 0);
-      setHasRightFade(element.scrollLeft < maxScrollLeft - 1);
-    }
-
-    updateFadeVisibility();
-
-    const element = containerRef.current;
-    if (!element) {
-      return;
-    }
-
-    element.addEventListener('scroll', updateFadeVisibility, { passive: true });
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateFadeVisibility();
-    });
-    resizeObserver.observe(element);
-    const firstChild = element.firstElementChild;
-    if (firstChild) {
-      resizeObserver.observe(firstChild);
-    }
-
-    window.addEventListener('resize', updateFadeVisibility);
-
-    return () => {
-      element.removeEventListener('scroll', updateFadeVisibility);
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', updateFadeVisibility);
-    };
-  }, []);
-
-  return (
-    <div
-      className={joinClassNames(
-        'table-wrap',
-        className,
-        hasLeftFade ? 'has-left-fade' : undefined,
-        hasRightFade ? 'has-right-fade' : undefined
-      )}
-    >
-      <div ref={containerRef} className="table-wrap-scroll">
-        {children}
-      </div>
-    </div>
   );
 }
 
@@ -373,25 +258,13 @@ export function OptionsApp() {
   const [rootUrlError, setRootUrlError] = useState('');
   const [importMessage, setImportMessage] = useState('');
   const [importError, setImportError] = useState('');
-  const [inlineEditError, setInlineEditError] = useState('');
-  const [editingCell, setEditingCell] = useState<{
-    source: string;
-    draft: string;
-    cellKey: string;
-  } | null>(null);
-  const [glyphToTextInput, setGlyphToTextInput] = useState('');
-  const [textToGlyphInput, setTextToGlyphInput] = useState('');
-  const [textToGlyphSelected, setTextToGlyphSelected] = useState<string[]>([]);
-  const [converterMessage, setConverterMessage] = useState('');
-  const [converterError, setConverterError] = useState('');
-  const [converterTab, setConverterTab] = useState<OptionsConverterTab>(
+  const [converterTab, setConverterTab] = useState<ConverterTab>(
     DEFAULT_OPTIONS_UI_STATE.converterTab
   );
   const [collapsedBookmarkGroups, setCollapsedBookmarkGroups] = useState<
     Record<string, boolean>
   >({});
   const importFileInputRef = useRef<HTMLInputElement>(null);
-  const skipBlurCommitRef = useRef(false);
 
   function applyOptionsUiState(nextUiState: OptionsUiState): void {
     setShowRootUrls(nextUiState.showRootUrls);
@@ -442,57 +315,6 @@ export function OptionsApp() {
       chrome.storage.onChanged.removeListener(handler);
     };
   }, []);
-
-  const glyphSections = useMemo(() => {
-    const mappings = table?.mappings ?? {};
-    const baseCells = OKECHIKA_TEXT_CHARS.map((source) => ({
-      source,
-      target: mappings[source] ?? '?'
-    }));
-    const numberLikeCells = OKECHIKA_NUMBER_CHARS.map((source) => ({
-      source,
-      target: mappings[source] ?? '?'
-    }));
-
-    function toRows(source: Array<{ source: string; target: string }>) {
-      const chunked: Array<Array<{ source: string; target: string }>> = [];
-      for (let i = 0; i < source.length; i += 20) {
-        chunked.push(source.slice(i, i + 20));
-      }
-      return chunked;
-    }
-
-    return {
-      baseRows: toRows(baseCells),
-      numberLikeRows: toRows(numberLikeCells)
-    };
-  }, [table]);
-
-  const decodeProgress = useMemo(() => {
-    const mappings = table?.mappings ?? {};
-    const total = OKECHIKA_CHARS.length;
-    const decoded = OKECHIKA_CHARS.reduce((count, source) => {
-      const target = mappings[source];
-      return target && target !== '?' ? count + 1 : count;
-    }, 0);
-    const percent = total === 0 ? 0 : (decoded / total) * 100;
-
-    return {
-      decoded,
-      total,
-      percent
-    };
-  }, [table]);
-
-  const otherMappings = useMemo(() => {
-    const mappings = table?.mappings ?? {};
-    const defined = new Set(OKECHIKA_CHARS);
-    return Object.entries(mappings)
-      .filter(([source]) => !defined.has(source))
-      .sort(([a], [b]) =>
-        a.localeCompare(b, undefined, { sensitivity: 'base' })
-      );
-  }, [table]);
 
   const bookmarkedUrls = useMemo(
     () => new Set(bookmarks.map((bookmark) => bookmark.url)),
@@ -584,69 +406,6 @@ export function OptionsApp() {
       return changed ? next : prev;
     });
   }, [discoveredPageGroups]);
-
-  const glyphSourceSet = useMemo(() => new Set(OKECHIKA_CHARS), []);
-
-  const glyphToTextOutput = useMemo(() => {
-    const mappings = table?.mappings ?? {};
-    return Array.from(glyphToTextInput)
-      .map((char) => {
-        const mapped = mappings[char];
-        if (mapped) {
-          return mapped;
-        }
-        return glyphSourceSet.has(char) ? '?' : char;
-      })
-      .join('');
-  }, [glyphToTextInput, glyphSourceSet, table]);
-
-  const textToGlyphSegments = useMemo(() => {
-    const mappings = table?.mappings ?? {};
-    const reverseMap = new Map<string, string[]>();
-    Object.entries(mappings).forEach(([source, target]) => {
-      if (!target) {
-        return;
-      }
-      const existing = reverseMap.get(target);
-      if (existing) {
-        existing.push(source);
-        return;
-      }
-      reverseMap.set(target, [source]);
-    });
-    for (const candidates of reverseMap.values()) {
-      candidates.sort((a, b) => a.localeCompare(b));
-    }
-
-    const targets = Array.from(reverseMap.keys()).sort(
-      (a, b) => b.length - a.length
-    );
-    const tokens = tokenizeByLongestTargets(textToGlyphInput, targets);
-    return tokens.map((token) => ({
-      token,
-      candidates: reverseMap.get(token) ?? []
-    }));
-  }, [table, textToGlyphInput]);
-
-  useEffect(() => {
-    setTextToGlyphSelected((prev) =>
-      textToGlyphSegments.map((segment, index) => {
-        const previous = prev[index];
-        if (previous && segment.candidates.includes(previous)) {
-          return previous;
-        }
-        return segment.candidates[0] ?? '';
-      })
-    );
-  }, [textToGlyphSegments]);
-
-  const textToGlyphOutput = useMemo(
-    () =>
-      textToGlyphSegments
-        .map((segment, index) => textToGlyphSelected[index] || segment.token)
-        .join(''),
-    [textToGlyphSegments, textToGlyphSelected]
-  );
 
   const optionsUiState: OptionsUiState = {
     showRootUrls,
@@ -771,7 +530,7 @@ export function OptionsApp() {
     });
   }
 
-  function handleSelectConverterTab(nextTab: OptionsConverterTab): void {
+  function handleSelectConverterTab(nextTab: ConverterTab): void {
     setConverterTab(nextTab);
     void saveOptionsPanelState({
       ...optionsUiState,
@@ -784,16 +543,6 @@ export function OptionsApp() {
     void saveOptionsPanelState({
       ...optionsUiState,
       tableDisplayMode: nextMode
-    });
-  }
-
-  function handleSearchOfficialSite(query: string): void {
-    const rootUrl = 'https://www.qtes9gu0k.xyz/';
-    openSearchPage({
-      rootUrl,
-      query,
-      openInNewTab: true,
-      usePost: shouldUsePostSearch(rootUrl, settings.enableOkck24HourMode)
     });
   }
 
@@ -847,139 +596,6 @@ export function OptionsApp() {
     } finally {
       event.currentTarget.value = '';
     }
-  }
-
-  async function handleCopyConverterResult(
-    value: string,
-    successMessage: string
-  ): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(value);
-      setConverterError('');
-      setConverterMessage(successMessage);
-    } catch {
-      setConverterMessage('');
-      setConverterError('コピーに失敗しました。');
-    }
-  }
-
-  function startInlineEdit(
-    source: string,
-    currentTarget: string,
-    cellKey: string
-  ): void {
-    setInlineEditError('');
-    setEditingCell({
-      source,
-      draft: currentTarget === '?' ? '' : currentTarget,
-      cellKey
-    });
-  }
-
-  function cancelInlineEdit(): void {
-    setEditingCell(null);
-  }
-
-  async function commitInlineEdit(
-    source: string,
-    draft: string
-  ): Promise<void> {
-    if (!table) {
-      return;
-    }
-
-    const currentValue = table.mappings[source] ?? '';
-    const shouldDelete = draft === '' || draft === '?';
-    if (shouldDelete && currentValue === '') {
-      setEditingCell(null);
-      return;
-    }
-    if (!shouldDelete && draft === currentValue) {
-      setEditingCell(null);
-      return;
-    }
-
-    const nextMappings: DecodeMap = { ...table.mappings };
-    if (shouldDelete) {
-      delete nextMappings[source];
-    } else {
-      nextMappings[source] = draft;
-    }
-
-    setEditingCell(null);
-    setInlineEditError('');
-    setTable({
-      mappings: nextMappings,
-      updatedAt: new Date().toISOString()
-    });
-
-    try {
-      await setMappings(nextMappings);
-    } catch {
-      setInlineEditError(
-        'セル編集の保存に失敗しました。もう一度お試しください。'
-      );
-    }
-  }
-
-  function renderCellEditor(source: string, cellKey: string): JSX.Element {
-    if (editingCell?.source === source && editingCell.cellKey === cellKey) {
-      return (
-        <input
-          className="cell-edit-input"
-          size={1}
-          value={editingCell.draft}
-          onChange={(event) => {
-            const nextDraft = event.currentTarget.value;
-            setEditingCell((prev) => {
-              if (!prev || prev.source !== source || prev.cellKey !== cellKey) {
-                return prev;
-              }
-              return {
-                ...prev,
-                draft: nextDraft
-              };
-            });
-          }}
-          onBlur={() => {
-            if (skipBlurCommitRef.current) {
-              skipBlurCommitRef.current = false;
-              return;
-            }
-            void commitInlineEdit(source, editingCell.draft);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              void commitInlineEdit(source, editingCell.draft);
-              return;
-            }
-
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              skipBlurCommitRef.current = true;
-              cancelInlineEdit();
-            }
-          }}
-          autoFocus
-        />
-      );
-    }
-
-    return <></>;
-  }
-
-  function renderEditableTarget(target: string): JSX.Element {
-    return (
-      <span
-        className={joinClassNames(
-          'editable-target',
-          target === '?' ? 'unknown-target' : undefined
-        )}
-      >
-        {target}
-      </span>
-    );
   }
 
   if (loading || !settings || !table) {
@@ -1206,159 +822,15 @@ export function OptionsApp() {
             <p className="caption">
               桶地下文字から日本語、日本語から桶地下文字へ変換できます。日本語→桶地下は候補から選択できます。
             </p>
-            {converterMessage ? (
-              <p className="caption success">{converterMessage}</p>
-            ) : null}
-            {converterError ? (
-              <p className="caption error">{converterError}</p>
-            ) : null}
-
-            <div className="converter-tab-group">
-              <button
-                type="button"
-                className={
-                  converterTab === 'textToGlyph'
-                    ? 'secondary is-active'
-                    : 'secondary'
-                }
-                onClick={() => handleSelectConverterTab('textToGlyph')}
-              >
-                日本語 → 桶地下
-              </button>
-              <button
-                type="button"
-                className={
-                  converterTab === 'glyphToText'
-                    ? 'secondary is-active'
-                    : 'secondary'
-                }
-                onClick={() => handleSelectConverterTab('glyphToText')}
-              >
-                桶地下 → 日本語
-              </button>
-            </div>
-
-            <div className="converter-section">
-              {converterTab === 'glyphToText' ? (
-                <>
-                  <textarea
-                    className="converter-textarea"
-                    rows={1}
-                    value={glyphToTextInput}
-                    onChange={(event) => {
-                      setGlyphToTextInput(event.currentTarget.value);
-                      setConverterMessage('');
-                      setConverterError('');
-                    }}
-                    placeholder="桶地下文字を入力"
-                  />
-                  <div className="converter-output">
-                    {glyphToTextOutput || '（変換結果）'}
-                  </div>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => {
-                      void handleCopyConverterResult(
-                        glyphToTextOutput,
-                        '日本語変換結果をコピーしました。'
-                      );
-                    }}
-                    disabled={!glyphToTextOutput}
-                  >
-                    結果をコピー
-                  </button>
-                </>
-              ) : null}
-
-              {converterTab === 'textToGlyph' ? (
-                <>
-                  <textarea
-                    className="converter-textarea"
-                    rows={1}
-                    value={textToGlyphInput}
-                    onChange={(event) => {
-                      setTextToGlyphInput(event.currentTarget.value);
-                      setConverterMessage('');
-                      setConverterError('');
-                    }}
-                    placeholder="日本語を入力"
-                  />
-                  <div className="converter-candidates">
-                    {textToGlyphSegments.length === 0 ? (
-                      <p className="caption">候補がここに表示されます。</p>
-                    ) : (
-                      textToGlyphSegments.map((segment, index) => (
-                        <div
-                          key={`segment-${index}-${segment.token}`}
-                          className="converter-segment"
-                        >
-                          <span className="converter-token">
-                            {segment.token}
-                          </span>
-                          {segment.candidates.length === 0 ? (
-                            <span className="converter-no-candidate">
-                              候補なし
-                            </span>
-                          ) : (
-                            <div className="converter-choices">
-                              {segment.candidates.map((candidate) => (
-                                <button
-                                  key={`choice-${index}-${candidate}`}
-                                  type="button"
-                                  className={
-                                    textToGlyphSelected[index] === candidate
-                                      ? 'secondary is-active'
-                                      : 'secondary'
-                                  }
-                                  onClick={() => {
-                                    setTextToGlyphSelected((prev) => {
-                                      const next = [...prev];
-                                      next[index] = candidate;
-                                      return next;
-                                    });
-                                  }}
-                                >
-                                  {candidate}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <div className="converter-output">
-                    {textToGlyphOutput || '（変換結果）'}
-                  </div>
-                  <div className="converter-actions">
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => {
-                        void handleCopyConverterResult(
-                          textToGlyphOutput,
-                          '桶地下文字変換結果をコピーしました。'
-                        );
-                      }}
-                      disabled={!textToGlyphOutput}
-                    >
-                      結果をコピー
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => {
-                        handleSearchOfficialSite(textToGlyphOutput);
-                      }}
-                      disabled={!textToGlyphOutput}
-                    >
-                      公式サイトで検索
-                    </button>
-                  </div>
-                </>
-              ) : null}
-            </div>
+            <ConverterPanel
+              mappings={table?.mappings ?? {}}
+              enableOkck24HourMode={
+                settings?.enableOkck24HourMode ??
+                DEFAULT_SETTINGS.enableOkck24HourMode
+              }
+              tab={converterTab}
+              onTabChange={handleSelectConverterTab}
+            />
           </section>
 
           <section className="panel">
@@ -1502,282 +974,31 @@ export function OptionsApp() {
             </div>
           </div>
           <p className="caption">
-            最終更新日: {formatUpdatedAt(table.updatedAt)}
+            設定画面では CSV のインポート / エクスポートも行えます。
           </p>
-          {importMessage ? (
-            <p className="caption success">{importMessage}</p>
-          ) : null}
-          {importError ? <p className="caption error">{importError}</p> : null}
-          {inlineEditError ? (
-            <p className="caption error">{inlineEditError}</p>
-          ) : null}
-          <p className="caption">
-            セルをダブルクリックすると、そのセルを直接編集できます。
-          </p>
-
-          <div className="display-row">
-            <p className="caption progress">
-              解析進捗: {decodeProgress.decoded}/{decodeProgress.total}（
-              {decodeProgress.percent.toFixed(1)}%）
-            </p>
-            <div className="display-controls">
-              <label className="source-font-toggle">
-                <input
-                  type="checkbox"
-                  checked={settings.useSourceGlyphFontInOptions}
-                  onChange={(event) => {
-                    void handleToggleSourceGlyphFont(
-                      event.currentTarget.checked
-                    );
-                  }}
-                />
-                <span>変換前に桶地下フォントを適用</span>
-              </label>
-              <div className="display-mode-group">
-                <button
-                  type="button"
-                  className={
-                    displayMode === 'source'
-                      ? 'secondary is-active'
-                      : 'secondary'
-                  }
-                  onClick={() => handleSelectDisplayMode('source')}
-                >
-                  変換前
-                </button>
-                <button
-                  type="button"
-                  className={
-                    displayMode === 'target'
-                      ? 'secondary is-active'
-                      : 'secondary'
-                  }
-                  onClick={() => handleSelectDisplayMode('target')}
-                >
-                  変換後
-                </button>
-                <button
-                  type="button"
-                  className={
-                    displayMode === 'both' ? 'secondary is-active' : 'secondary'
-                  }
-                  onClick={() => handleSelectDisplayMode('both')}
-                >
-                  両方表示
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <ScrollableTableWrap className="table-wrap-fill">
-            <table>
-              <tbody>
-                {glyphSections.baseRows.map((row, rowIndex) => (
-                  <tr key={`glyph-row-${rowIndex}`}>
-                    {row.map(({ source, target }) => (
-                      <td
-                        key={source}
-                        className="glyph-cell editable-cell"
-                        onDoubleClick={() =>
-                          startInlineEdit(source, target, source)
-                        }
-                        title="ダブルクリックで編集"
-                      >
-                        {editingCell?.source === source &&
-                        editingCell.cellKey === source
-                          ? renderCellEditor(source, source)
-                          : null}
-                        {editingCell?.source === source &&
-                        editingCell.cellKey === source ? null : displayMode ===
-                          'source' ? (
-                          <span
-                            className={joinClassNames(
-                              settings.useSourceGlyphFontInOptions
-                                ? 'source-glyph'
-                                : undefined,
-                              target === '?' ? 'unknown-target' : undefined
-                            )}
-                          >
-                            {source}
-                          </span>
-                        ) : null}
-                        {editingCell?.source === source &&
-                        editingCell.cellKey === source
-                          ? null
-                          : displayMode === 'target'
-                            ? renderEditableTarget(target)
-                            : null}
-                        {editingCell?.source === source &&
-                        editingCell.cellKey === source ? null : displayMode ===
-                          'both' ? (
-                          <span className="glyph-pair">
-                            <span
-                              className={joinClassNames(
-                                settings.useSourceGlyphFontInOptions
-                                  ? 'source-glyph'
-                                  : undefined,
-                                target === '?' ? 'unknown-target' : undefined
-                              )}
-                            >
-                              {source}
-                            </span>
-                            <span
-                              className={
-                                target === '?'
-                                  ? 'glyph-divider unknown-target'
-                                  : 'glyph-divider'
-                              }
-                            >
-                              {'>'}
-                            </span>
-                            {renderEditableTarget(target)}
-                          </span>
-                        ) : null}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ScrollableTableWrap>
-
-          {glyphSections.numberLikeRows.length > 0 ? (
-            <>
-              <ScrollableTableWrap className="table-wrap-fill table-wrap-second">
-                <table>
-                  <tbody>
-                    {glyphSections.numberLikeRows.map((row, rowIndex) => (
-                      <tr key={`glyph-number-row-${rowIndex}`}>
-                        {row.map(({ source, target }) => (
-                          <td
-                            key={source}
-                            className="glyph-cell editable-cell"
-                            onDoubleClick={() =>
-                              startInlineEdit(source, target, source)
-                            }
-                            title="ダブルクリックで編集"
-                          >
-                            {editingCell?.source === source &&
-                            editingCell.cellKey === source
-                              ? renderCellEditor(source, source)
-                              : null}
-                            {editingCell?.source === source &&
-                            editingCell.cellKey ===
-                              source ? null : displayMode === 'source' ? (
-                              <span
-                                className={joinClassNames(
-                                  settings.useSourceGlyphFontInOptions
-                                    ? 'source-glyph'
-                                    : undefined,
-                                  target === '?' ? 'unknown-target' : undefined
-                                )}
-                              >
-                                {source}
-                              </span>
-                            ) : null}
-                            {editingCell?.source === source &&
-                            editingCell.cellKey === source
-                              ? null
-                              : displayMode === 'target'
-                                ? renderEditableTarget(target)
-                                : null}
-                            {editingCell?.source === source &&
-                            editingCell.cellKey ===
-                              source ? null : displayMode === 'both' ? (
-                              <span className="glyph-pair">
-                                <span
-                                  className={joinClassNames(
-                                    settings.useSourceGlyphFontInOptions
-                                      ? 'source-glyph'
-                                      : undefined,
-                                    target === '?'
-                                      ? 'unknown-target'
-                                      : undefined
-                                  )}
-                                >
-                                  {source}
-                                </span>
-                                <span
-                                  className={
-                                    target === '?'
-                                      ? 'glyph-divider unknown-target'
-                                      : 'glyph-divider'
-                                  }
-                                >
-                                  {'>'}
-                                </span>
-                                {renderEditableTarget(target)}
-                              </span>
-                            ) : null}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </ScrollableTableWrap>
-            </>
-          ) : null}
-
-          <h3 className="subsection-title">その他の文字</h3>
-          {otherMappings.length === 0 ? (
-            <p className="caption">該当する文字はありません。</p>
-          ) : (
-            <ScrollableTableWrap className="table-wrap-compact">
-              <table className="compact-table">
-                <thead>
-                  <tr>
-                    <th>変換前</th>
-                    <th>変換後</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {otherMappings.map(([source, target]) => (
-                    <tr key={`other-${source}`}>
-                      <td
-                        className={joinClassNames(
-                          'editable-cell',
-                          settings.useSourceGlyphFontInOptions
-                            ? 'source-glyph'
-                            : undefined,
-                          target === '?' ? 'unknown-target' : undefined
-                        )}
-                        onDoubleClick={() =>
-                          startInlineEdit(
-                            source,
-                            target,
-                            `other-source-${source}`
-                          )
-                        }
-                        title="ダブルクリックで編集"
-                      >
-                        {editingCell?.source === source &&
-                        editingCell.cellKey === `other-source-${source}`
-                          ? renderCellEditor(source, `other-source-${source}`)
-                          : source}
-                      </td>
-                      <td
-                        className="editable-cell"
-                        onDoubleClick={() =>
-                          startInlineEdit(
-                            source,
-                            target,
-                            `other-target-${source}`
-                          )
-                        }
-                        title="ダブルクリックで編集"
-                      >
-                        {editingCell?.source === source &&
-                        editingCell.cellKey === `other-target-${source}`
-                          ? renderCellEditor(source, `other-target-${source}`)
-                          : renderEditableTarget(target)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScrollableTableWrap>
-          )}
+          <ConversionTablePanel
+            table={table}
+            useSourceGlyphFont={settings.useSourceGlyphFontInOptions}
+            onToggleSourceGlyphFont={(checked) => {
+              void handleToggleSourceGlyphFont(checked);
+            }}
+            displayMode={displayMode}
+            onDisplayModeChange={handleSelectDisplayMode}
+            statusContent={
+              <>
+                {importMessage ? (
+                  <p className="conversion-table-caption success">
+                    {importMessage}
+                  </p>
+                ) : null}
+                {importError ? (
+                  <p className="conversion-table-caption error">
+                    {importError}
+                  </p>
+                ) : null}
+              </>
+            }
+          />
         </section>
 
         <section className="panel">
