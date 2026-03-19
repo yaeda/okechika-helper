@@ -10,9 +10,10 @@ This document is a guide for agents and contributors working in this repository.
 
 ## 2. Specification Management
 
-- The single source of truth (SSOT) for product specifications is `docs/SPEC.md`
-- Any implementation change that affects behavior or UX must update `docs/SPEC.md` in the same change
-- Divergence between implementation and `docs/SPEC.md` is not allowed
+- `docs/SPEC.md` is the single source of truth (SSOT) for product specifications and expected behavior
+- `docs/USER_GUIDE.md` is the user-facing guide for how to use the extension
+- Any implementation change that affects behavior or UX must update both `docs/SPEC.md` and `docs/USER_GUIDE.md` in the same change
+- Divergence between implementation and either document is not allowed
 
 ## 3. Coding Guidelines
 
@@ -43,8 +44,23 @@ This document is a guide for agents and contributors working in this repository.
 
 ## 6. Commit Messages
 
-- Follow Conventional Commits
+- Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 - Format: `<type>(<scope>): <subject>`
+- Example scopes: `sidepanel`, `options`, `content`, `storage`, `docs`, `ci`
+- An optional commit body may be added after a blank line when extra context is needed
+- Limit commit types to the following:
+  - `feat`: a new user-facing feature or capability
+  - `fix`: a bug fix or regression fix
+  - `docs`: documentation-only changes
+  - `style`: formatting or style-only changes with no behavioral impact
+  - `refactor`: internal code changes that do not change behavior
+  - `test`: test-only additions or updates
+  - `chore`: repository maintenance work that does not fit the categories above
+  - `ci`: CI-related changes such as GitHub Actions workflows, CI scripts, and pipeline configuration
+
+## 6.1 Branch Names
+
+- Prefer concise purpose-based names such as `feat/...`, `fix/...`, `ci/...`, or `chore/...`
 
 ## 7. Pre-commit Checklist
 
