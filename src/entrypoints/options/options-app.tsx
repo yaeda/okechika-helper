@@ -1084,6 +1084,16 @@ export function OptionsApp() {
                 github.com/yaeda/okechika-helper
               </a>
             </li>
+            <li>
+              開発者にコーヒーを奢る 👉{' '}
+              <a
+                href="https://buymeacoffee.com/yaeda"
+                target="_blank"
+                rel="noreferrer"
+              >
+                buymeacoffee.com/yaeda
+              </a>
+            </li>
           </ul>
         </section>
       </div>
