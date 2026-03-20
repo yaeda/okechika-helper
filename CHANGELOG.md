@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v1.10.1
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.10.0...v1.10.1)
+
+### 🩹 Fixes
+
+- **options:** Make favicon permission optional ([24399e3](https://github.com/yaeda/okechika-helper/commit/24399e3))
+
+### 📖 Documentation
+
+- **agents:** Disallow tool-specific branch prefixes ([0e00dee](https://github.com/yaeda/okechika-helper/commit/0e00dee))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.10.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.9.0...v1.10.0)
