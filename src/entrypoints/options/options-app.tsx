@@ -14,6 +14,7 @@ import {
 import { requestRootUrlPermission } from '@/lib/host-permissions';
 import { createPageSearchMatcher } from '@/lib/page-search';
 import {
+  getConversionTableHighlightState,
   DEFAULT_OPTIONS_UI_STATE,
   DEFAULT_ROOT_URLS,
   DEFAULT_SETTINGS,
@@ -30,6 +31,7 @@ import {
 } from '@/lib/storage';
 import type {
   BookmarkEntry,
+  ConversionTableHighlightState,
   ConverterTab,
   DecodeMap,
   DecodeTable,
@@ -261,6 +263,8 @@ export function OptionsApp() {
   const [converterTab, setConverterTab] = useState<ConverterTab>(
     DEFAULT_OPTIONS_UI_STATE.converterTab
   );
+  const [tableHighlightState, setTableHighlightState] =
+    useState<ConversionTableHighlightState | null>(null);
   const [collapsedBookmarkGroups, setCollapsedBookmarkGroups] = useState<
     Record<string, boolean>
   >({});
@@ -280,16 +284,20 @@ export function OptionsApp() {
 
   useEffect(() => {
     async function load(): Promise<void> {
-      const [state, uiState, pendingUpdate] = await Promise.all([
-        getState(),
-        getOptionsUiState(),
-        getPendingExtensionUpdate()
-      ]);
+      const [state, uiState, pendingUpdate, highlightState] = await Promise.all(
+        [
+          getState(),
+          getOptionsUiState(),
+          getPendingExtensionUpdate(),
+          getConversionTableHighlightState()
+        ]
+      );
       setLocalSettings(state.settings);
       setTable(state.table);
       setDiscoveredPages(state.discoveredPages);
       setBookmarks(state.bookmarks);
       setPendingExtensionUpdateState(pendingUpdate);
+      setTableHighlightState(highlightState);
       applyOptionsUiState(uiState);
       setLoading(false);
     }
@@ -304,7 +312,9 @@ export function OptionsApp() {
           (changes.decodeTable || changes.settings || changes.bookmarks)) ||
         (areaName === 'local' && changes.discoveredPages) ||
         (areaName === 'local' &&
-          (changes.optionsUiState || changes.pendingExtensionUpdate))
+          (changes.optionsUiState ||
+            changes.pendingExtensionUpdate ||
+            changes.conversionTableHighlightState))
       ) {
         void load();
       }
@@ -444,6 +454,19 @@ export function OptionsApp() {
     await saveSettings({
       ...settings,
       useSourceGlyphFontInOptions: checked
+    });
+  }
+
+  async function handleToggleSelectionHighlight(
+    checked: boolean
+  ): Promise<void> {
+    if (!settings) {
+      return;
+    }
+
+    await saveSettings({
+      ...settings,
+      highlightSelectedTextInSidePanel: checked
     });
   }
 
@@ -1017,9 +1040,14 @@ export function OptionsApp() {
             onToggleSourceGlyphFont={(checked) => {
               void handleToggleSourceGlyphFont(checked);
             }}
-            showHighlightToggle={false}
+            highlightSelectedText={settings.highlightSelectedTextInSidePanel}
+            onToggleHighlightSelectedText={(checked) => {
+              void handleToggleSelectionHighlight(checked);
+            }}
             displayMode={displayMode}
             onDisplayModeChange={handleSelectDisplayMode}
+            highlightedSources={tableHighlightState?.sourceChars}
+            highlightRequestId={tableHighlightState?.selectedAt ?? null}
             statusContent={
               <>
                 {importMessage ? (

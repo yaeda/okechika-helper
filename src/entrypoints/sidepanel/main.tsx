@@ -12,18 +12,22 @@ import { OKECHIKA_CHARS } from '@/lib/okechika-chars';
 import {
   getConversionTableHighlightState,
   DEFAULT_OPTIONS_UI_STATE,
+  DEFAULT_SIDEPANEL_UI_STATE,
   DEFAULT_SETTINGS,
   DEFAULT_TABLE,
   getOptionsUiState,
+  getSidepanelUiState,
   getState,
   setOptionsUiState,
+  setSidepanelUiState,
   setSettings
 } from '@/lib/storage';
 import type {
   ConversionTableHighlightState,
   DecodeTable,
   ExtensionSettings,
-  OptionsUiState
+  OptionsUiState,
+  SidepanelUiState
 } from '@/lib/types';
 import '@/entrypoints/sidepanel/sidepanel.css';
 
@@ -36,11 +40,16 @@ function SidepanelApp() {
   );
   const [tableHighlightState, setTableHighlightState] =
     useState<ConversionTableHighlightState | null>(null);
-  const [isDiscoveredPanelExpanded, setIsDiscoveredPanelExpanded] =
-    useState(true);
-  const [isConverterPanelExpanded, setIsConverterPanelExpanded] =
-    useState(true);
-  const [isTablePanelExpanded, setIsTablePanelExpanded] = useState(false);
+  const [isDiscoveredPanelExpanded, setIsDiscoveredPanelExpanded] = useState(
+    DEFAULT_SIDEPANEL_UI_STATE.discoveredPanelExpanded
+  );
+  const [isConverterPanelExpanded, setIsConverterPanelExpanded] = useState(
+    DEFAULT_SIDEPANEL_UI_STATE.converterPanelExpanded
+  );
+  const [isTablePanelExpanded, setIsTablePanelExpanded] = useState(
+    DEFAULT_SIDEPANEL_UI_STATE.tablePanelExpanded
+  );
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     async function loadPanelState(): Promise<void> {
@@ -53,12 +62,26 @@ function SidepanelApp() {
       setLocalOptionsUiState(nextOptionsUiState);
     }
 
+    async function loadSidepanelUiState(): Promise<void> {
+      const nextSidepanelUiState = await getSidepanelUiState();
+      applySidepanelUiState(nextSidepanelUiState);
+    }
+
     async function loadHighlightState(): Promise<void> {
       const nextHighlightState = await getConversionTableHighlightState();
       setTableHighlightState(nextHighlightState);
     }
 
-    void Promise.all([loadPanelState(), loadHighlightState()]);
+    async function load(): Promise<void> {
+      await Promise.all([
+        loadPanelState(),
+        loadSidepanelUiState(),
+        loadHighlightState()
+      ]);
+      setIsReady(true);
+    }
+
+    void load();
 
     const handler: Parameters<
       typeof chrome.storage.onChanged.addListener
@@ -76,6 +99,10 @@ function SidepanelApp() {
         void loadPanelState();
       }
 
+      if (changes.sidepanelUiState) {
+        void loadSidepanelUiState();
+      }
+
       if (changes.conversionTableHighlightState) {
         void loadHighlightState();
       }
@@ -86,6 +113,17 @@ function SidepanelApp() {
       chrome.storage.onChanged.removeListener(handler);
     };
   }, []);
+
+  function applySidepanelUiState(nextUiState: SidepanelUiState): void {
+    setIsDiscoveredPanelExpanded(nextUiState.discoveredPanelExpanded);
+    setIsConverterPanelExpanded(nextUiState.converterPanelExpanded);
+    setIsTablePanelExpanded(nextUiState.tablePanelExpanded);
+  }
+
+  function saveSidepanelUiState(nextUiState: SidepanelUiState): void {
+    applySidepanelUiState(nextUiState);
+    void setSidepanelUiState(nextUiState);
+  }
 
   async function handleToggleSourceGlyphFont(checked: boolean): Promise<void> {
     const nextSettings = {
@@ -127,13 +165,21 @@ function SidepanelApp() {
     return `${decoded}/${OKECHIKA_CHARS.length}`;
   }, [table]);
 
+  if (!isReady) {
+    return null;
+  }
+
   return (
     <ActionSurface mode="sidepanel">
       <ActionPanel
         mode="sidepanel"
         expanded={isDiscoveredPanelExpanded}
         onToggle={() => {
-          setIsDiscoveredPanelExpanded((prev) => !prev);
+          saveSidepanelUiState({
+            discoveredPanelExpanded: !isDiscoveredPanelExpanded,
+            converterPanelExpanded: isConverterPanelExpanded,
+            tablePanelExpanded: isTablePanelExpanded
+          });
         }}
       />
 
@@ -141,7 +187,11 @@ function SidepanelApp() {
         title="相互変換"
         expanded={isConverterPanelExpanded}
         onToggle={() => {
-          setIsConverterPanelExpanded((prev) => !prev);
+          saveSidepanelUiState({
+            discoveredPanelExpanded: isDiscoveredPanelExpanded,
+            converterPanelExpanded: !isConverterPanelExpanded,
+            tablePanelExpanded: isTablePanelExpanded
+          });
         }}
       >
         <p className="action-panel-caption">
@@ -160,7 +210,11 @@ function SidepanelApp() {
         meta={tableProgressText}
         expanded={isTablePanelExpanded}
         onToggle={() => {
-          setIsTablePanelExpanded((prev) => !prev);
+          saveSidepanelUiState({
+            discoveredPanelExpanded: isDiscoveredPanelExpanded,
+            converterPanelExpanded: isConverterPanelExpanded,
+            tablePanelExpanded: !isTablePanelExpanded
+          });
         }}
       >
         <div className="action-panel-body">
