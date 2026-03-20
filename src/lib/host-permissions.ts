@@ -40,6 +40,14 @@ export async function requestRootUrlPermission(
   return chrome.permissions.request({ origins });
 }
 
+export async function hasFaviconPermission(): Promise<boolean> {
+  return chrome.permissions.contains({ permissions: ['favicon'] });
+}
+
+export async function requestFaviconPermission(): Promise<boolean> {
+  return chrome.permissions.request({ permissions: ['favicon'] });
+}
+
 async function getPermittedHostsForRootUrl(
   rootUrl: string
 ): Promise<Array<{ protocol: string; host: string }>> {

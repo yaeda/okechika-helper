@@ -1,4 +1,4 @@
-import type { ChangeEvent, KeyboardEvent } from 'react';
+import type { ChangeEvent, CSSProperties, KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ConverterPanel } from '@/components/converter-panel';
@@ -11,7 +11,11 @@ import {
   containsKnownGlyphChars,
   decodeTextWithMappings
 } from '@/lib/conversion';
-import { requestRootUrlPermission } from '@/lib/host-permissions';
+import {
+  hasFaviconPermission,
+  requestFaviconPermission,
+  requestRootUrlPermission
+} from '@/lib/host-permissions';
 import { createPageSearchMatcher } from '@/lib/page-search';
 import {
   getConversionTableHighlightState,
@@ -218,6 +222,41 @@ function maskRootUrl(value: string): string {
   }
 }
 
+function getRootUrlBadgeLabel(rootUrl: string): string {
+  try {
+    const hostname = new URL(rootUrl).hostname.replace(/^www\./i, '');
+    const parts = hostname.split('.').filter(Boolean);
+    const primaryLabel =
+      parts.length >= 2 ? parts[parts.length - 2] : (parts[0] ?? '');
+
+    return primaryLabel.slice(0, 2).toUpperCase() || '??';
+  } catch {
+    return '??';
+  }
+}
+
+function getRootUrlBadgeHue(rootUrl: string): number {
+  let hash = 0;
+
+  for (const char of rootUrl) {
+    hash = (hash * 31 + char.charCodeAt(0)) % 360;
+  }
+
+  return hash;
+}
+
+function RootUrlBadge({ rootUrl }: { rootUrl: string }) {
+  const style = {
+    '--domain-item-badge-hue': `${getRootUrlBadgeHue(rootUrl)}deg`
+  } as CSSProperties;
+
+  return (
+    <span className="domain-item-badge" style={style} aria-hidden="true">
+      {getRootUrlBadgeLabel(rootUrl)}
+    </span>
+  );
+}
+
 function getFaviconUrl(pageUrl: string): string {
   const faviconUrl = new URL(chrome.runtime.getURL('/_favicon/'));
   faviconUrl.searchParams.set('pageUrl', pageUrl);
@@ -225,13 +264,32 @@ function getFaviconUrl(pageUrl: string): string {
   return faviconUrl.toString();
 }
 
-function RootUrlFavicon({ rootUrl }: { rootUrl: string }) {
+function RootUrlIcon({
+  rootUrl,
+  showFavicon
+}: {
+  rootUrl: string;
+  showFavicon: boolean;
+}) {
+  const [faviconFailed, setFaviconFailed] = useState(false);
+
+  useEffect(() => {
+    setFaviconFailed(false);
+  }, [rootUrl, showFavicon]);
+
+  if (!showFavicon || faviconFailed) {
+    return <RootUrlBadge rootUrl={rootUrl} />;
+  }
+
   return (
     <img
       className="domain-item-favicon-image"
       src={getFaviconUrl(rootUrl)}
       alt=""
       aria-hidden="true"
+      onError={() => {
+        setFaviconFailed(true);
+      }}
     />
   );
 }
@@ -243,6 +301,9 @@ export function OptionsApp() {
   );
   const [showRootUrls, setShowRootUrls] = useState(
     DEFAULT_OPTIONS_UI_STATE.showRootUrls
+  );
+  const [showFavicons, setShowFavicons] = useState(
+    DEFAULT_OPTIONS_UI_STATE.showFavicons
   );
   const [pendingExtensionUpdate, setPendingExtensionUpdateState] =
     useState<PendingExtensionUpdate | null>(null);
@@ -258,6 +319,13 @@ export function OptionsApp() {
   const [loading, setLoading] = useState(true);
   const [newRootUrlInput, setNewRootUrlInput] = useState('');
   const [rootUrlError, setRootUrlError] = useState('');
+  const [faviconPermissionGranted, setFaviconPermissionGranted] =
+    useState(false);
+  const [faviconPermissionError, setFaviconPermissionError] = useState('');
+  const [showFaviconPermissionDialog, setShowFaviconPermissionDialog] =
+    useState(false);
+  const [requestingFaviconPermission, setRequestingFaviconPermission] =
+    useState(false);
   const [importMessage, setImportMessage] = useState('');
   const [importError, setImportError] = useState('');
   const [converterTab, setConverterTab] = useState<ConverterTab>(
@@ -272,6 +340,7 @@ export function OptionsApp() {
 
   function applyOptionsUiState(nextUiState: OptionsUiState): void {
     setShowRootUrls(nextUiState.showRootUrls);
+    setShowFavicons(nextUiState.showFavicons);
     setConverterTab(nextUiState.converterTab);
     setDisplayMode(nextUiState.tableDisplayMode);
   }
@@ -284,20 +353,21 @@ export function OptionsApp() {
 
   useEffect(() => {
     async function load(): Promise<void> {
-      const [state, uiState, pendingUpdate, highlightState] = await Promise.all(
-        [
+      const [state, uiState, pendingUpdate, highlightState, canShowFavicon] =
+        await Promise.all([
           getState(),
           getOptionsUiState(),
           getPendingExtensionUpdate(),
-          getConversionTableHighlightState()
-        ]
-      );
+          getConversionTableHighlightState(),
+          hasFaviconPermission()
+        ]);
       setLocalSettings(state.settings);
       setTable(state.table);
       setDiscoveredPages(state.discoveredPages);
       setBookmarks(state.bookmarks);
       setPendingExtensionUpdateState(pendingUpdate);
       setTableHighlightState(highlightState);
+      setFaviconPermissionGranted(canShowFavicon);
       applyOptionsUiState(uiState);
       setLoading(false);
     }
@@ -321,8 +391,16 @@ export function OptionsApp() {
     };
 
     chrome.storage.onChanged.addListener(handler);
+    const handlePermissionChanged = () => {
+      void hasFaviconPermission().then(setFaviconPermissionGranted);
+    };
+    chrome.permissions.onAdded.addListener(handlePermissionChanged);
+    chrome.permissions.onRemoved.addListener(handlePermissionChanged);
+
     return () => {
       chrome.storage.onChanged.removeListener(handler);
+      chrome.permissions.onAdded.removeListener(handlePermissionChanged);
+      chrome.permissions.onRemoved.removeListener(handlePermissionChanged);
     };
   }, []);
 
@@ -419,6 +497,7 @@ export function OptionsApp() {
 
   const optionsUiState: OptionsUiState = {
     showRootUrls,
+    showFavicons,
     converterTab,
     tableDisplayMode: displayMode
   };
@@ -564,6 +643,53 @@ export function OptionsApp() {
       ...optionsUiState,
       showRootUrls: nextShowRootUrls
     });
+  }
+
+  function setFaviconsVisible(nextShowFavicons: boolean): void {
+    setShowFavicons(nextShowFavicons);
+    void saveOptionsPanelState({
+      ...optionsUiState,
+      showFavicons: nextShowFavicons
+    });
+  }
+
+  function handleToggleShowFavicons(): void {
+    setFaviconPermissionError('');
+
+    if (showFavicons && faviconPermissionGranted) {
+      setFaviconsVisible(false);
+      return;
+    }
+
+    if (faviconPermissionGranted) {
+      setFaviconsVisible(true);
+      return;
+    }
+
+    setShowFaviconPermissionDialog(true);
+  }
+
+  async function handleConfirmFaviconPermission(): Promise<void> {
+    setFaviconPermissionError('');
+    setRequestingFaviconPermission(true);
+
+    try {
+      const granted = await requestFaviconPermission();
+      setFaviconPermissionGranted(granted);
+
+      if (!granted) {
+        setShowFaviconPermissionDialog(false);
+        setFaviconPermissionError(
+          'favicon 表示を有効にするには、追加権限の許可が必要です。'
+        );
+        return;
+      }
+
+      setFaviconsVisible(true);
+      setShowFaviconPermissionDialog(false);
+    } finally {
+      setRequestingFaviconPermission(false);
+    }
   }
 
   function handleSelectConverterTab(nextTab: ConverterTab): void {
@@ -712,6 +838,15 @@ export function OptionsApp() {
                 <button
                   type="button"
                   className="secondary"
+                  onClick={handleToggleShowFavicons}
+                >
+                  {showFavicons && faviconPermissionGranted
+                    ? 'faviconを隠す'
+                    : 'faviconを表示'}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
                   onClick={() => {
                     void handleResetDefaultRootUrls();
                   }}
@@ -724,6 +859,10 @@ export function OptionsApp() {
             <p className="caption">
               対象ルートURLを追加・削除できます。追加時にブラウザ権限の許可を求めることがあります。
             </p>
+
+            {faviconPermissionError ? (
+              <p className="caption error">{faviconPermissionError}</p>
+            ) : null}
 
             <div className="domain-input-row">
               <input
@@ -775,8 +914,11 @@ export function OptionsApp() {
                     }}
                   >
                     <div className="domain-item-main">
-                      <span className="domain-item-favicon">
-                        <RootUrlFavicon rootUrl={rootUrl} />
+                      <span className="domain-item-badge-slot">
+                        <RootUrlIcon
+                          rootUrl={rootUrl}
+                          showFavicon={showFavicons && faviconPermissionGranted}
+                        />
                       </span>
                       <span>
                         {showRootUrls ? rootUrl : maskRootUrl(rootUrl)}
@@ -1126,6 +1268,60 @@ export function OptionsApp() {
           </ul>
         </section>
       </div>
+
+      {showFaviconPermissionDialog ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={() => {
+            if (!requestingFaviconPermission) {
+              setShowFaviconPermissionDialog(false);
+            }
+          }}
+        >
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="favicon-permission-title"
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <h2 id="favicon-permission-title">
+              favicon 表示を有効にしますか？
+            </h2>
+            <p className="caption">
+              この機能を初めて有効にするとき、Chrome
+              に追加権限を要求します。確認画面では、訪問したウェブサイトのアイコンを読み取る権限として表示されます。
+            </p>
+            <p className="caption">
+              許可後は、対象ルート URL 一覧で favicon を表示できます。
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  setShowFaviconPermissionDialog(false);
+                }}
+                disabled={requestingFaviconPermission}
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleConfirmFaviconPermission();
+                }}
+                disabled={requestingFaviconPermission}
+              >
+                {requestingFaviconPermission ? '確認中...' : '許可して表示'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

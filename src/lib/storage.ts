@@ -47,6 +47,7 @@ export const DEFAULT_TABLE: DecodeTable = {
 
 export const DEFAULT_OPTIONS_UI_STATE: OptionsUiState = {
   showRootUrls: false,
+  showFavicons: false,
   converterTab: 'textToGlyph',
   tableDisplayMode: 'both'
 };
@@ -149,6 +150,8 @@ export async function getOptionsUiState(): Promise<OptionsUiState> {
   return {
     showRootUrls:
       rawUiState?.showRootUrls ?? DEFAULT_OPTIONS_UI_STATE.showRootUrls,
+    showFavicons:
+      rawUiState?.showFavicons ?? DEFAULT_OPTIONS_UI_STATE.showFavicons,
     converterTab:
       rawUiState?.converterTab === 'glyphToText' ||
       rawUiState?.converterTab === 'textToGlyph'

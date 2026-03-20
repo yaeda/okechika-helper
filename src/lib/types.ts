@@ -30,6 +30,7 @@ export type OptionsTableDisplayMode = 'source' | 'target' | 'both';
 
 export interface OptionsUiState {
   showRootUrls: boolean;
+  showFavicons: boolean;
   converterTab: ConverterTab;
   tableDisplayMode: OptionsTableDisplayMode;
 }
