@@ -1,6 +1,44 @@
 # Changelog
 
 
+## v1.10.0
+
+[compare changes](https://github.com/yaeda/okechika-helper/compare/v1.9.0...v1.10.0)
+
+### 🚀 Enhancements
+
+- **options:** Show favicons for target root urls ([d8ad4eb](https://github.com/yaeda/okechika-helper/commit/d8ad4eb))
+- **sidepanel:** Add page side panel toggle ([619331d](https://github.com/yaeda/okechika-helper/commit/619331d))
+- **sidepanel:** Add converter panel and accordion sections ([74cc575](https://github.com/yaeda/okechika-helper/commit/74cc575))
+- **sidepanel:** Add conversion table panel ([1e5a2d0](https://github.com/yaeda/okechika-helper/commit/1e5a2d0))
+- **sidepanel:** Highlight selected glyphs in table ([bbf7393](https://github.com/yaeda/okechika-helper/commit/bbf7393))
+- **content:** Add okck layout fix toggle ([fdcd6a7](https://github.com/yaeda/okechika-helper/commit/fdcd6a7))
+- **options:** Add developer support link ([1432f83](https://github.com/yaeda/okechika-helper/commit/1432f83))
+- **sidepanel:** Add highlight opt-out ([5b10aab](https://github.com/yaeda/okechika-helper/commit/5b10aab))
+- **sidepanel:** Persist accordion state ([1cee5ee](https://github.com/yaeda/okechika-helper/commit/1cee5ee))
+- **options:** Enable conversion table highlighting ([f8f3386](https://github.com/yaeda/okechika-helper/commit/f8f3386))
+
+### 🩹 Fixes
+
+- **sidepanel:** Prevent outer vertical scroll ([d33c9b1](https://github.com/yaeda/okechika-helper/commit/d33c9b1))
+- **ci:** Support release retry after submit failure ([714936b](https://github.com/yaeda/okechika-helper/commit/714936b))
+
+### 📖 Documentation
+
+- **sidepanel:** Update user guide ([268f33a](https://github.com/yaeda/okechika-helper/commit/268f33a))
+- **agents:** Clarify commit and document rules ([c3c1eb3](https://github.com/yaeda/okechika-helper/commit/c3c1eb3))
+- **docs:** Add table share investigation note ([83e5c9a](https://github.com/yaeda/okechika-helper/commit/83e5c9a))
+
+### 🏡 Chore
+
+- **ci:** Sync user guide to wiki on tags ([5aebad3](https://github.com/yaeda/okechika-helper/commit/5aebad3))
+- **repo:** Ignore submit env variants ([feb94ed](https://github.com/yaeda/okechika-helper/commit/feb94ed))
+- **ci:** Add overwrite notice to wiki sync ([221ea5f](https://github.com/yaeda/okechika-helper/commit/221ea5f))
+
+### ❤️ Contributors
+
+- Takeshi Yaeda ([@yaeda](https://github.com/yaeda))
+
 ## v1.9.0
 
 [compare changes](https://github.com/yaeda/okechika-helper/compare/v1.8.0...v1.9.0)
