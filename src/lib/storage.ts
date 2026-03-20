@@ -8,7 +8,8 @@ import type {
   ExtensionState,
   OptionsUiState,
   PendingExtensionUpdate,
-  PopupUiState
+  PopupUiState,
+  SidepanelUiState
 } from '@/lib/types';
 
 const STORAGE_KEYS = {
@@ -18,6 +19,7 @@ const STORAGE_KEYS = {
   bookmarks: 'bookmarks',
   optionsUiState: 'optionsUiState',
   popupUiState: 'popupUiState',
+  sidepanelUiState: 'sidepanelUiState',
   conversionTableHighlightState: 'conversionTableHighlightState',
   pendingExtensionUpdate: 'pendingExtensionUpdate'
 } as const;
@@ -51,6 +53,12 @@ export const DEFAULT_OPTIONS_UI_STATE: OptionsUiState = {
 
 export const DEFAULT_POPUP_UI_STATE: PopupUiState = {
   showBookmarkedOnly: false
+};
+
+export const DEFAULT_SIDEPANEL_UI_STATE: SidepanelUiState = {
+  discoveredPanelExpanded: true,
+  converterPanelExpanded: true,
+  tablePanelExpanded: false
 };
 
 function nowIso(): string {
@@ -168,6 +176,25 @@ export async function getPopupUiState(): Promise<PopupUiState> {
   };
 }
 
+export async function getSidepanelUiState(): Promise<SidepanelUiState> {
+  const result = await getLocalStorage().get(STORAGE_KEYS.sidepanelUiState);
+  const rawUiState = result[STORAGE_KEYS.sidepanelUiState] as
+    | Partial<SidepanelUiState>
+    | undefined;
+
+  return {
+    discoveredPanelExpanded:
+      rawUiState?.discoveredPanelExpanded ??
+      DEFAULT_SIDEPANEL_UI_STATE.discoveredPanelExpanded,
+    converterPanelExpanded:
+      rawUiState?.converterPanelExpanded ??
+      DEFAULT_SIDEPANEL_UI_STATE.converterPanelExpanded,
+    tablePanelExpanded:
+      rawUiState?.tablePanelExpanded ??
+      DEFAULT_SIDEPANEL_UI_STATE.tablePanelExpanded
+  };
+}
+
 export async function getConversionTableHighlightState(): Promise<ConversionTableHighlightState | null> {
   const result = await getLocalStorage().get(
     STORAGE_KEYS.conversionTableHighlightState
@@ -234,6 +261,14 @@ export async function setOptionsUiState(
 export async function setPopupUiState(uiState: PopupUiState): Promise<void> {
   await getLocalStorage().set({
     [STORAGE_KEYS.popupUiState]: uiState satisfies PopupUiState
+  });
+}
+
+export async function setSidepanelUiState(
+  uiState: SidepanelUiState
+): Promise<void> {
+  await getLocalStorage().set({
+    [STORAGE_KEYS.sidepanelUiState]: uiState satisfies SidepanelUiState
   });
 }
 

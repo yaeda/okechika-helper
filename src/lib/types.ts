@@ -38,6 +38,12 @@ export interface PopupUiState {
   showBookmarkedOnly: boolean;
 }
 
+export interface SidepanelUiState {
+  discoveredPanelExpanded: boolean;
+  converterPanelExpanded: boolean;
+  tablePanelExpanded: boolean;
+}
+
 export interface ConversionTableHighlightState {
   sourceChars: string[];
   selectedAt: string;
