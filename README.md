@@ -61,6 +61,13 @@ npm run format:check
 3. 「デベロッパーモード」を ON
 4. 「パッケージ化されていない拡張機能を読み込む」で `.output/chrome-mv3` を選択
 
+## リリース時の注意
+
+Chrome Web Store への submit に失敗した場合の再実行方法は、失敗した段階で分かれます。
+
+- ZIP のアップロード前に失敗した場合は、Developer Dashboard や認証情報を修正したあと、通常どおり `Release Extension` workflow を再実行します。
+- ZIP のアップロード後に失敗した場合は、Developer Dashboard 側の追加作業を済ませたあと、`Release Extension` workflow を `skip_submit=true` で再実行します。このモードでは `wxt submit` をスキップし、release commit / tag / GitHub release 作成など残りの処理だけを再実行します。
+
 ## 権利について
 
 - 桶地下は第四境界のコンテンツです

@@ -8,6 +8,11 @@ on:
         required: true
         default: true
         type: boolean
+      skip_submit:
+        description: 'Skip Chrome Web Store submit and run the remaining release steps only'
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -52,6 +57,7 @@ jobs:
         run: npm run zip -- --browser firefox
 
       - name: Submit Chrome package via wxt submit
+        if: ${{ !inputs.skip_submit }}
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
