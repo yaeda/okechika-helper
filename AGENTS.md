@@ -61,6 +61,7 @@ This document is a guide for agents and contributors working in this repository.
 ## 6.1 Branch Names
 
 - Prefer concise purpose-based names such as `feat/...`, `fix/...`, `ci/...`, or `chore/...`
+- Do not use agent/tool-specific prefixes such as `codex/`
 
 ## 7. Pre-commit Checklist
 
