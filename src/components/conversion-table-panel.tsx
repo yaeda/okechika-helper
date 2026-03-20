@@ -122,7 +122,6 @@ export function ConversionTablePanel({
   onToggleSourceGlyphFont,
   highlightSelectedText,
   onToggleHighlightSelectedText,
-  showHighlightToggle = true,
   displayMode,
   onDisplayModeChange,
   statusContent,
@@ -133,9 +132,8 @@ export function ConversionTablePanel({
   table: DecodeTable;
   useSourceGlyphFont: boolean;
   onToggleSourceGlyphFont: (checked: boolean) => void | Promise<void>;
-  highlightSelectedText?: boolean;
-  onToggleHighlightSelectedText?: (checked: boolean) => void | Promise<void>;
-  showHighlightToggle?: boolean;
+  highlightSelectedText: boolean;
+  onToggleHighlightSelectedText: (checked: boolean) => void | Promise<void>;
   displayMode?: OptionsTableDisplayMode;
   onDisplayModeChange?: (nextMode: OptionsTableDisplayMode) => void;
   statusContent?: ReactNode;
@@ -451,20 +449,16 @@ export function ConversionTablePanel({
             />
             <span>変換前に桶地下フォントを適用</span>
           </label>
-          {showHighlightToggle ? (
-            <label className="conversion-table-source-font-toggle">
-              <input
-                type="checkbox"
-                checked={highlightSelectedText ?? false}
-                onChange={(event) => {
-                  void onToggleHighlightSelectedText?.(
-                    event.currentTarget.checked
-                  );
-                }}
-              />
-              <span>選択した文字をハイライトする</span>
-            </label>
-          ) : null}
+          <label className="conversion-table-source-font-toggle">
+            <input
+              type="checkbox"
+              checked={highlightSelectedText}
+              onChange={(event) => {
+                void onToggleHighlightSelectedText(event.currentTarget.checked);
+              }}
+            />
+            <span>選択した文字をハイライトする</span>
+          </label>
           <div className="conversion-table-display-mode-group">
             <button
               type="button"
