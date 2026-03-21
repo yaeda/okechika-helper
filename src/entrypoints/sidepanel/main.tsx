@@ -8,6 +8,7 @@ import {
 } from '@/components/action-panel';
 import { ConverterPanel } from '@/components/converter-panel';
 import { ConversionTablePanel } from '@/components/conversion-table-panel';
+import { UpdateAvailableBanner } from '@/components/update-available-banner';
 import { OKECHIKA_CHARS } from '@/lib/okechika-chars';
 import {
   getConversionTableHighlightState,
@@ -170,7 +171,7 @@ function SidepanelApp() {
   }
 
   return (
-    <ActionSurface mode="sidepanel">
+    <ActionSurface mode="sidepanel" notice={<UpdateAvailableBanner />}>
       <ActionPanel
         mode="sidepanel"
         expanded={isDiscoveredPanelExpanded}

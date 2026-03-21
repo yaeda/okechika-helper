@@ -237,20 +237,27 @@ export async function getPendingExtensionUpdate(): Promise<PendingExtensionUpdat
     | undefined;
 
   if (
-    !rawPendingUpdate ||
-    typeof rawPendingUpdate.version !== 'string' ||
-    rawPendingUpdate.version.length === 0
+    rawPendingUpdate &&
+    typeof rawPendingUpdate.version === 'string' &&
+    rawPendingUpdate.version.length > 0
   ) {
-    return null;
+    return {
+      version: rawPendingUpdate.version,
+      detectedAt:
+        typeof rawPendingUpdate.detectedAt === 'string'
+          ? rawPendingUpdate.detectedAt
+          : nowIso()
+    };
   }
 
-  return {
-    version: rawPendingUpdate.version,
-    detectedAt:
-      typeof rawPendingUpdate.detectedAt === 'string'
-        ? rawPendingUpdate.detectedAt
-        : nowIso()
-  };
+  if (import.meta.env.DEV) {
+    return {
+      version: `${chrome.runtime.getManifest().version}（開発用）`,
+      detectedAt: nowIso()
+    };
+  }
+
+  return null;
 }
 
 export async function setOptionsUiState(

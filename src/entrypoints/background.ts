@@ -148,6 +148,61 @@ async function syncRuntimeContentScript(): Promise<void> {
   );
 }
 
+async function shouldEnableRuntimeContentScriptForTab(
+  url: string | undefined,
+  state?: Awaited<ReturnType<typeof getState>>
+): Promise<boolean> {
+  const nextState = state ?? (await getState());
+  const matchedRootUrl =
+    typeof url === 'string'
+      ? resolveMatchedRootUrl(nextState.settings, url)
+      : null;
+
+  return (
+    matchedRootUrl !== null && (await hasRootUrlPermission(matchedRootUrl))
+  );
+}
+
+async function reinjectRuntimeContentScriptIntoEligibleTabs(): Promise<void> {
+  const state = await getState();
+  const tabs = await chrome.tabs.query({});
+
+  await Promise.all(
+    tabs.map(async (tab) => {
+      try {
+        if (
+          typeof tab.id !== 'number' ||
+          !(await shouldEnableRuntimeContentScriptForTab(tab.url, state))
+        ) {
+          return;
+        }
+
+        await chrome.scripting.insertCSS({
+          target: { tabId: tab.id, allFrames: true },
+          files: CONTENT_SCRIPT_REGISTRATION.css
+        });
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id, allFrames: true },
+          files: CONTENT_SCRIPT_REGISTRATION.js
+        });
+        await syncSidePanelForTab(tab.id, tab.url, state);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const isGone =
+          message.includes('No tab with id') ||
+          message.includes('Tabs cannot be edited right now');
+        const isRestricted =
+          message.includes('Cannot access contents of') ||
+          message.includes('Missing host permission') ||
+          message.includes('The tab was closed');
+        if (!isGone && !isRestricted) {
+          throw error;
+        }
+      }
+    })
+  );
+}
+
 async function syncSidePanelState(): Promise<void> {
   const state = await getState();
 
@@ -292,6 +347,35 @@ function handleOpenSidePanelMessage(
   void toggleSidePanelForTab(tabId);
 }
 
+async function notifyTabsBeforeExtensionReload(): Promise<void> {
+  const tabs = await chrome.tabs.query({});
+
+  await Promise.all(
+    tabs.map(async (tab) => {
+      if (typeof tab.id !== 'number') {
+        return;
+      }
+
+      try {
+        await chrome.tabs.sendMessage(tab.id, {
+          type: 'prepare-extension-reload'
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const isNoReceiver =
+          message.includes('Receiving end does not exist') ||
+          message.includes('Could not establish connection');
+        const isRestrictedUrl =
+          message.includes('Cannot access contents of') ||
+          message.includes('The tab was closed');
+        if (!isNoReceiver && !isRestrictedUrl) {
+          throw error;
+        }
+      }
+    })
+  );
+}
+
 function registerSidePanelLifecycleListeners(): void {
   const sidePanel = getSidePanelApi();
   if (!sidePanel) {
@@ -376,12 +460,20 @@ export default defineBackground(() => {
   registerSidePanelLifecycleListeners();
   void startHydratingOpenSidePanelTabIds();
 
-  chrome.runtime.onInstalled.addListener(() => {
+  chrome.runtime.onInstalled.addListener((details) => {
     void ensureDefaults();
     void syncPendingExtensionUpdate();
     void startHydratingOpenSidePanelTabIds();
     queueSyncRuntimeContentScript();
     queueSyncSidePanelState();
+    if (details.reason === 'update') {
+      void reinjectRuntimeContentScriptIntoEligibleTabs().catch((error) =>
+        console.error(
+          'Failed to reinject content scripts after extension update',
+          error
+        )
+      );
+    }
   });
 
   chrome.runtime.onUpdateAvailable.addListener((details) => {
@@ -431,8 +523,26 @@ export default defineBackground(() => {
     markSidePanelClosed(tabId);
   });
 
-  chrome.runtime.onMessage.addListener((message, sender) => {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (
+      message &&
+      typeof message === 'object' &&
+      'type' in message &&
+      message.type === 'prepare-extension-reload'
+    ) {
+      void notifyTabsBeforeExtensionReload()
+        .then(() => {
+          sendResponse();
+        })
+        .catch((error) => {
+          console.error('Failed to notify tabs before extension reload', error);
+          sendResponse();
+        });
+      return true;
+    }
+
     handleOpenSidePanelMessage(message, sender);
+    return false;
   });
 
   void ensureDefaults();

@@ -80,9 +80,11 @@ export function ActionAccordionSection({
 
 export function ActionSurface({
   mode = 'popup',
+  notice,
   children
 }: {
   mode?: ActionPanelMode;
+  notice?: ReactNode;
   children: ReactNode;
 }) {
   async function handleOpenOptions(): Promise<void> {
@@ -96,6 +98,7 @@ export function ActionSurface({
     <main
       className={`action-panel-shell${mode === 'sidepanel' ? ' is-sidepanel' : ''}`}
     >
+      {notice}
       <button
         type="button"
         className="action-panel-settings-link"

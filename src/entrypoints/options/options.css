@@ -131,42 +131,6 @@ body {
   font-weight: 700;
 }
 
-.update-available-banner {
-  margin-top: 10px;
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-  padding: 10px 12px;
-  border: 1px solid #efcfb9;
-  border-radius: 12px;
-  background: #fff5ee;
-}
-
-.update-available-banner-compact {
-  max-width: 560px;
-}
-
-.update-available-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
-}
-
-.update-available-note {
-  margin: 0;
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.update-available-help {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
 .eyebrow {
   margin: 0;
   display: inline-flex;
@@ -182,10 +146,6 @@ body {
 .sub {
   margin: 0;
   color: var(--muted);
-}
-
-.hero-sub-inline {
-  margin: 0;
 }
 
 .panel {

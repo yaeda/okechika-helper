@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ConverterPanel } from '@/components/converter-panel';
 import { ConversionTablePanel } from '@/components/conversion-table-panel';
+import { UpdateAvailableBanner } from '@/components/update-available-banner';
 import {
   BookmarkListItem,
   type BookmarkListItemData
@@ -23,7 +24,6 @@ import {
   DEFAULT_ROOT_URLS,
   DEFAULT_SETTINGS,
   getOptionsUiState,
-  getPendingExtensionUpdate,
   getState,
   normalizeRootUrl,
   resolveMatchedRootUrl,
@@ -42,8 +42,7 @@ import type {
   DiscoveredPageEntry,
   ExtensionSettings,
   OptionsTableDisplayMode,
-  OptionsUiState,
-  PendingExtensionUpdate
+  OptionsUiState
 } from '@/lib/types';
 
 async function hashText(input: string): Promise<string> {
@@ -305,8 +304,6 @@ export function OptionsApp() {
   const [showFavicons, setShowFavicons] = useState(
     DEFAULT_OPTIONS_UI_STATE.showFavicons
   );
-  const [pendingExtensionUpdate, setPendingExtensionUpdateState] =
-    useState<PendingExtensionUpdate | null>(null);
   const [settings, setLocalSettings] = useState<ExtensionSettings | null>(null);
   const [table, setTable] = useState<DecodeTable | null>(null);
   const [discoveredPages, setDiscoveredPages] = useState<DiscoveredPageEntry[]>(
@@ -353,11 +350,10 @@ export function OptionsApp() {
 
   useEffect(() => {
     async function load(): Promise<void> {
-      const [state, uiState, pendingUpdate, highlightState, canShowFavicon] =
+      const [state, uiState, highlightState, canShowFavicon] =
         await Promise.all([
           getState(),
           getOptionsUiState(),
-          getPendingExtensionUpdate(),
           getConversionTableHighlightState(),
           hasFaviconPermission()
         ]);
@@ -365,7 +361,6 @@ export function OptionsApp() {
       setTable(state.table);
       setDiscoveredPages(state.discoveredPages);
       setBookmarks(state.bookmarks);
-      setPendingExtensionUpdateState(pendingUpdate);
       setTableHighlightState(highlightState);
       setFaviconPermissionGranted(canShowFavicon);
       applyOptionsUiState(uiState);
@@ -382,9 +377,7 @@ export function OptionsApp() {
           (changes.decodeTable || changes.settings || changes.bookmarks)) ||
         (areaName === 'local' && changes.discoveredPages) ||
         (areaName === 'local' &&
-          (changes.optionsUiState ||
-            changes.pendingExtensionUpdate ||
-            changes.conversionTableHighlightState))
+          (changes.optionsUiState || changes.conversionTableHighlightState))
       ) {
         void load();
       }
@@ -632,10 +625,6 @@ export function OptionsApp() {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  function handleApplyPendingUpdate(): void {
-    chrome.runtime.reload();
-  }
-
   function handleToggleShowRootUrls(): void {
     const nextShowRootUrls = !showRootUrls;
     setShowRootUrls(nextShowRootUrls);
@@ -775,26 +764,7 @@ export function OptionsApp() {
                 <span className="version-badge">v{extensionVersion}</span>
               </div>
             </div>
-            {pendingExtensionUpdate ? (
-              <div className="update-available-banner update-available-banner-compact">
-                <p className="hero-sub-inline update-available-note">
-                  新しいバージョン v{pendingExtensionUpdate.version}{' '}
-                  を適用できます。
-                </p>
-                <div className="update-available-actions">
-                  <button
-                    type="button"
-                    className="secondary version-update-button"
-                    onClick={handleApplyPendingUpdate}
-                  >
-                    更新する
-                  </button>
-                  <p className="update-available-help">
-                    実行すると拡張が再起動し、この画面は閉じます。
-                  </p>
-                </div>
-              </div>
-            ) : null}
+            <UpdateAvailableBanner />
             <div className="hero-side">
               <nav className="hero-links" aria-label="サポートリンク">
                 <a
