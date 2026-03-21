@@ -28,11 +28,13 @@ export interface BookmarkButtonController {
   contains(target: EventTarget | null): boolean;
   setBookmarked(isBookmarked: boolean): void;
   setVisible(isVisible: boolean): void;
+  destroy(): void;
 }
 
 export interface PageActionButtonController {
   contains(target: EventTarget | null): boolean;
   setVisible(isVisible: boolean): void;
+  destroy(): void;
 }
 
 function getActionButtonHost(): HTMLDivElement {
@@ -50,10 +52,37 @@ function getActionButtonHost(): HTMLDivElement {
   return host;
 }
 
+function replaceExistingButton(buttonId: string): HTMLButtonElement | null {
+  const existing = document.getElementById(buttonId);
+  if (!(existing instanceof HTMLButtonElement)) {
+    return null;
+  }
+
+  const replacement = existing.cloneNode(true);
+  if (!(replacement instanceof HTMLButtonElement)) {
+    existing.remove();
+    return null;
+  }
+
+  existing.replaceWith(replacement);
+  return replacement;
+}
+
+function cleanupActionButtonHostIfEmpty(): void {
+  const host = document.getElementById('okechika-page-action-buttons');
+  if (!(host instanceof HTMLDivElement) || host.childElementCount > 0) {
+    return;
+  }
+
+  host.remove();
+}
+
 export function createBookmarkButton(
   onClick: () => void | Promise<void>
 ): BookmarkButtonController {
-  const button = document.createElement('button');
+  const button =
+    replaceExistingButton('okechika-bookmark-button') ??
+    document.createElement('button');
   button.id = 'okechika-bookmark-button';
   button.type = 'button';
   button.className = 'is-hidden';
@@ -64,7 +93,9 @@ export function createBookmarkButton(
     void onClick();
   });
 
-  getActionButtonHost().append(button);
+  if (!button.parentElement) {
+    getActionButtonHost().append(button);
+  }
 
   return {
     contains(target) {
@@ -82,6 +113,10 @@ export function createBookmarkButton(
     },
     setVisible(isVisible) {
       button.classList.toggle('is-hidden', !isVisible);
+    },
+    destroy() {
+      button.remove();
+      cleanupActionButtonHostIfEmpty();
     }
   };
 }
@@ -89,7 +124,9 @@ export function createBookmarkButton(
 export function createSidePanelButton(
   onClick: () => void | Promise<void>
 ): PageActionButtonController {
-  const button = document.createElement('button');
+  const button =
+    replaceExistingButton('okechika-sidepanel-button') ??
+    document.createElement('button');
   button.id = 'okechika-sidepanel-button';
   button.type = 'button';
   button.className = 'is-hidden';
@@ -100,7 +137,9 @@ export function createSidePanelButton(
     void onClick();
   });
 
-  getActionButtonHost().append(button);
+  if (!button.parentElement) {
+    getActionButtonHost().append(button);
+  }
 
   return {
     contains(target) {
@@ -108,6 +147,10 @@ export function createSidePanelButton(
     },
     setVisible(isVisible) {
       button.classList.toggle('is-hidden', !isVisible);
+    },
+    destroy() {
+      button.remove();
+      cleanupActionButtonHostIfEmpty();
     }
   };
 }

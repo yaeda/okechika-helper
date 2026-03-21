@@ -41,13 +41,17 @@ let currentSelectionHighlightEnabled = false;
 let isActive = false;
 let observer: MutationObserver | null = null;
 
+function clearSiteLayoutFix(): void {
+  delete document.documentElement.dataset.okechikaSite;
+}
+
 function syncSiteLayoutFix(
   rootUrl: string | null,
   active: boolean,
   enabled: boolean
 ): void {
   if (!active || !enabled || !rootUrl) {
-    delete document.documentElement.dataset.okechikaSite;
+    clearSiteLayoutFix();
     return;
   }
 
@@ -60,7 +64,7 @@ function syncSiteLayoutFix(
     // Ignore invalid URLs and remove any stale site flag.
   }
 
-  delete document.documentElement.dataset.okechikaSite;
+  clearSiteLayoutFix();
 }
 
 function decodeSelectedText(text: string): string {
@@ -233,6 +237,30 @@ export default defineContentScript({
       sidePanelButton
     );
 
+    let isCleaningUp = false;
+
+    function cleanup(): void {
+      if (isCleaningUp) {
+        return;
+      }
+
+      isCleaningUp = true;
+      isActive = false;
+      observer?.disconnect();
+      observer = null;
+      clearSiteLayoutFix();
+      tooltip.hide();
+      tooltip.destroy();
+      annotation.clearAnnotations();
+      bookmarkButton.destroy();
+      sidePanelButton.destroy();
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('keyup', handleKeyUp);
+      chrome.storage.onChanged.removeListener(handleStorageChanged);
+      chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
+      void setConversionTableHighlightState(null);
+    }
+
     const handleSelection = () => {
       if (!isActive) {
         return;
@@ -255,7 +283,7 @@ export default defineContentScript({
       tooltip.show(picked.text, picked.rect);
     };
 
-    document.addEventListener('mouseup', (event) => {
+    function handleMouseUp(event: MouseEvent): void {
       if (
         tooltip.contains(event.target) ||
         bookmarkButton.contains(event.target) ||
@@ -264,16 +292,19 @@ export default defineContentScript({
         return;
       }
       window.setTimeout(handleSelection, 0);
-    });
+    }
 
-    document.addEventListener('keyup', (event) => {
+    function handleKeyUp(event: KeyboardEvent): void {
       if (event.isComposing || tooltip.shouldIgnoreSelectionCheck()) {
         return;
       }
       window.setTimeout(handleSelection, 0);
-    });
+    }
 
-    chrome.storage.onChanged.addListener((changes, areaName) => {
+    function handleStorageChanged(
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string
+    ): void {
       if (areaName !== 'sync') {
         return;
       }
@@ -286,6 +317,22 @@ export default defineContentScript({
           sidePanelButton
         );
       }
-    });
+    }
+
+    function handleRuntimeMessage(message: unknown): void {
+      if (
+        message &&
+        typeof message === 'object' &&
+        message.type === 'prepare-extension-reload'
+      ) {
+        cleanup();
+      }
+    }
+
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('keyup', handleKeyUp);
+
+    chrome.storage.onChanged.addListener(handleStorageChanged);
+    chrome.runtime.onMessage.addListener(handleRuntimeMessage);
   }
 });

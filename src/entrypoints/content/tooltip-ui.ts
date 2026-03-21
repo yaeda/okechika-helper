@@ -21,6 +21,7 @@ export interface TooltipUi {
   hide: () => void;
   contains: (target: EventTarget | null) => boolean;
   shouldIgnoreSelectionCheck: () => boolean;
+  destroy: () => void;
 }
 
 function createInitialTooltipState(): TooltipState {
@@ -271,6 +272,9 @@ export function createTooltipUi(
     },
     shouldIgnoreSelectionCheck() {
       return ui.mounted?.shouldIgnoreSelectionCheck() ?? false;
+    },
+    destroy() {
+      ui.remove();
     }
   };
 }

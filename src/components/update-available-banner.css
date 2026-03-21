@@ -1,0 +1,58 @@
+.update-available-banner {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 10px 12px;
+  border: 1px solid #efcfb9;
+  border-radius: 12px;
+  background: #fff5ee;
+}
+
+.update-available-note {
+  margin: 0;
+  color: #c44c1d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.update-available-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.update-available-button {
+  border: 1px solid #ddd5cd;
+  border-radius: 10px;
+  background: #fff;
+  padding: 5px 10px;
+  color: #4a3d32;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.update-available-button:hover {
+  background: #f3ede7;
+}
+
+.action-panel-shell .update-available-banner {
+  margin-top: 0;
+}
+
+.action-panel-shell .update-available-actions {
+  flex-wrap: wrap;
+}
+
+.update-available-help {
+  margin: 0;
+  color: #685f57;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.action-panel-shell .update-available-help {
+  white-space: normal;
+}
