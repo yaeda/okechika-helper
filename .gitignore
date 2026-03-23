@@ -3,3 +3,5 @@ node_modules/
 .output/
 .DS_Store
 .env.submit*
+plans/*
+!plans/Plan.md
