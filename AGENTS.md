@@ -37,7 +37,9 @@ This document is a guide for agents and contributors working in this repository.
 ## 4. ExecPlans
 
 - Use an ExecPlan for complex features, significant refactors, or changes to user-facing behavior, external configuration, persisted storage, import/export formats, or other durable data contracts
-- Store ExecPlans under `plans/` using descriptive kebab-case file names; create the directory if it does not exist
+- Start from the template at `plans/Plan.md`
+- Store working ExecPlans under `plans/` using descriptive kebab-case file names; create the directory if it does not exist
+- Treat `plans/` as local working material; only the template file is tracked unless a specific plan is intentionally committed
 - Each ExecPlan should cover the problem, scope, risks, compatibility considerations, implementation phases, verification steps, and required spec/doc updates
 - Treat shipped behavior and persisted data as compatibility boundaries; if a change can affect existing users or saved data, explicitly document migration, fallback, or rollback expectations
 - Small fixes, isolated refactors, and docs-only changes do not require an ExecPlan
